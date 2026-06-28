@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>_t_val｜运势行动图</title>
+<style>
+  :root {
+    --bg:#f7f7f5;
+    --paper:#ffffff;
+    --ink:#111111;
+    --muted:#676767;
+    --faint:#9d9d9d;
+    --line:#dddddd;
+    --soft:#f1f1ef;
+    --accent:#7a6848;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    padding:36px 24px;
+  }
+  .page {
+    max-width:1180px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+  }
+  .top {
+    display:grid;
+    grid-template-columns:1fr 300px 1fr;
+    border-bottom:1px solid var(--line);
+  }
+  .hero { padding:40px 42px 34px; }
+  .eyebrow {
+    font-size:12px;
+    letter-spacing:.12em;
+    color:var(--faint);
+    text-transform:uppercase;
+    margin-bottom:24px;
+  }
+  h1 {
+    font-size:52px;
+    line-height:1;
+    font-weight:500;
+    letter-spacing:0;
+    margin-bottom:20px;
+  }
+  .name { font-size:18px; line-height:1.55; color:var(--muted); margin-bottom:10px; }
+  .range { font-size:13px; color:var(--faint); font-variant-numeric:tabular-nums; }
+  .score-box {
+    border-left:1px solid var(--line);
+    border-right:1px solid var(--line);
+    padding:38px 30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:10px;
+  }
+  .score-num { font-size:72px; line-height:1; font-weight:500; color:var(--accent); }
+  .score-label { font-size:13px; color:var(--faint); letter-spacing:.1em; }
+  .summary { padding:40px 38px 34px; display:flex; flex-direction:column; justify-content:space-between; gap:22px; }
+  .keyword { font-size:30px; line-height:1.24; font-weight:500; }
+  .texture { font-size:15px; line-height:1.85; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid var(--line); }
+  .panel {
+    padding:28px 30px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    min-height:188px;
+  }
+  .panel:nth-child(3n) { border-right:0; }
+  .panel.wide { grid-column:span 2; }
+  .panel.full { grid-column:1 / -1; border-right:0; }
+  .label {
+    font-size:12px;
+    letter-spacing:.10em;
+    color:var(--faint);
+    margin-bottom:16px;
+  }
+  .lead { font-size:17px; line-height:1.7; font-weight:400; }
+  .muted { font-size:14px; line-height:1.82; color:var(--muted); }
+  .stats { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); }
+  .stat { padding:18px; }
+  .stat + .stat { border-left:1px solid var(--line); }
+  .stat b { display:block; font-size:36px; line-height:1; font-weight:500; color:var(--accent); margin-bottom:8px; }
+  .stat span { font-size:13px; color:var(--muted); }
+  .metrics { display:grid; gap:12px; }
+  .metric-row { display:grid; grid-template-columns:78px 1fr 34px; gap:12px; align-items:center; font-size:13px; }
+  .metric-name { color:var(--muted); }
+  .metric-bar { height:5px; background:var(--soft); position:relative; overflow:hidden; }
+  .metric-bar i { display:block; height:100%; background:var(--ink); }
+  .metric-score { color:var(--faint); text-align:right; font-variant-numeric:tabular-nums; }
+  .systems { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--line); }
+  .system-tile { padding:18px 20px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); min-height:86px; }
+  .system-tile:nth-child(2n) { border-right:0; }
+  .system-tile span { display:block; font-size:12px; color:var(--faint); margin-bottom:8px; }
+  .system-tile b { font-size:14px; line-height:1.65; font-weight:400; color:var(--muted); }
+  .focus { display:grid; gap:12px; }
+  .focus-row { display:grid; grid-template-columns:76px 1fr; gap:14px; padding:12px 0; border-bottom:1px solid var(--soft); }
+  .focus-row:last-child { border-bottom:0; }
+  .focus-row span { color:var(--faint); font-size:13px; }
+  .focus-row b { color:var(--ink); font-size:15px; font-weight:400; line-height:1.7; }
+  .calendar { border-top:1px solid var(--line); }
+  .calendar-row {
+    display:grid;
+    grid-template-columns:70px 92px 1fr 42px;
+    gap:16px;
+    padding:12px 0;
+    border-bottom:1px solid var(--soft);
+    align-items:baseline;
+    font-size:14px;
+  }
+  .calendar-row span, .calendar-row i { color:var(--faint); font-style:normal; font-variant-numeric:tabular-nums; }
+  .calendar-row b { font-weight:400; color:var(--ink); }
+  .calendar-row em { font-style:normal; color:var(--muted); }
+  .cards-grid { display:grid; grid-template-columns:repeat(5, 1fr); border-top:1px solid var(--line); }
+  .day-card { padding:20px 18px; border-right:1px solid var(--line); min-height:210px; }
+  .day-card:last-child { border-right:0; }
+  .day-header { display:flex; align-items:baseline; gap:8px; margin-bottom:14px; }
+  .day-num { font-size:36px; line-height:1; font-weight:500; color:var(--accent); }
+  .day-week { font-size:12px; color:var(--faint); }
+  .destined-badge { margin-left:auto; font-size:12px; color:var(--muted); }
+  .ganzhi { font-size:13px; color:var(--faint); margin-bottom:10px; }
+  .short-sign { font-size:15px; color:var(--ink); line-height:1.55; margin-bottom:10px; }
+  .yi-items, .nakshatra { font-size:13px; color:var(--muted); line-height:1.65; }
+  .score-bar { height:4px; background:var(--soft); margin-top:14px; overflow:hidden; }
+  .score-fill { height:100%; background:var(--ink); }
+  .footer {
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    padding:20px 30px;
+    font-size:12px;
+    color:var(--faint);
+  }
+  @media (max-width:900px) {
+    body { padding:18px 14px; }
+    .top, .grid, .systems, .cards-grid { grid-template-columns:1fr; }
+    .score-box, .summary, .panel, .day-card { border-right:0; border-left:0; }
+    .score-box, .summary, .day-card { border-top:1px solid var(--line); }
+    .hero, .summary, .score-box, .panel { padding:28px 24px; }
+    h1 { font-size:40px; }
+    .panel.wide { grid-column:auto; }
+    .calendar-row { grid-template-columns:58px 76px 1fr 36px; gap:10px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="top">
+    <div class="hero">
+      <div class="eyebrow">Action Map</div>
+      <h1>运势行动图</h1>
+      <div class="name">_t_val</div>
+      <div class="range">2026-06-01 - 2026-06-30</div>
+    </div>
+    <div class="score-box">
+      <div class="score-label">ACTION SCORE</div>
+      <div class="score-num">42</div>
+      <div class="muted">综合未来30天推进势能、稳定度、风险噪音与聚焦指数。</div>
+    </div>
+    <div class="summary">
+      <div>
+        <div class="label">本阶段策略</div>
+        <div class="keyword">未来30天不是不能动，而是不要在情绪最满的时候把话说死、把决定做绝。先把关键承诺、见面、材料和边界排清楚，真正要冲的事留给推进窗口。</div>
+      </div>
+      <p class="texture">这张盘以壬日主为底，伤官格、日主偏弱；西占的太阳双鱼、月亮巨蟹让情绪和直觉更容易参与判断；印占的Punarvasu与Jupiter大运，把阶段主题推向学习、信念和方向感；紫微身宫落在财帛宫，说明行动最后还是要落回现实安全感。</p>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <div class="label">窗口统计</div>
+      <div class="stats">
+        <div class="stat"><b>3</b><span>推进窗口</span></div>
+        <div class="stat"><b>2</b><span>避坑窗口</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="label">四维行动指数</div>
+      <div class="metrics">
+<div class="metric-row">
+  <span class="metric-name">推进势能</span>
+  <span class="metric-bar"><i style="width:64%"></i></span>
+  <span class="metric-score">64</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">稳定程度</span>
+  <span class="metric-bar"><i style="width:43%"></i></span>
+  <span class="metric-score">43</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">风险噪音</span>
+  <span class="metric-bar"><i style="width:88%"></i></span>
+  <span class="metric-score">88</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">聚焦指数</span>
+  <span class="metric-bar"><i style="width:96%"></i></span>
+  <span class="metric-score">96</span>
+</div></div>
+    </div>
+    <div class="panel">
+      <div class="label">核心动作</div>
+      <div class="focus">
+        <div class="focus-row"><span>适合做</span><b>祭祀、安机械、求嗣</b></div>
+        <div class="focus-row"><span>先别碰</span><b>移徙、掘井、入宅</b></div>
+      </div>
+    </div>
+    <div class="panel wide">
+      <div class="label">四系统底盘</div>
+      <div class="systems"><div class="system-tile"><span>八字</span><b>壬日主 / 伤官格 / 用水、金 忌土、木、火</b></div>
+<div class="system-tile"><span>紫微</span><b>命宫命宫 / 身宫财帛宫 / 主星未标明</b></div>
+<div class="system-tile"><span>印占</span><b>月宿Punarvasu Pada 2 / 大运Jupiter</b></div>
+<div class="system-tile"><span>西占</span><b>太阳双鱼 / 月亮巨蟹 / 上升金牛</b></div></div>
+    </div>
+    <div class="panel">
+      <div class="label">个人底色</div>
+      <p class="lead">壬日主，用神水·金。本图把命盘底色翻译成未来30天的行动节奏，不展示原始排盘表。</p>
+    </div>
+    <div class="panel full">
+      <div class="label">关键窗口列表</div>
+      <div class="calendar">
+<div class="calendar-row">
+  <span>06-03</span>
+  <b>忌</b>
+  <em>入宅、安床、作灶</em>
+  <i>6</i>
+</div>
+
+<div class="calendar-row">
+  <span>06-10</span>
+  <b>命定时刻</b>
+  <em>祭祀、作灶、馀事勿取</em>
+  <i>60</i>
+</div>
+
+<div class="calendar-row">
+  <span>06-12</span>
+  <b>忌</b>
+  <em>移徙、掘井、入宅</em>
+  <i>0</i>
+</div>
+
+<div class="calendar-row">
+  <span>06-26</span>
+  <b>命定时刻</b>
+  <em>祭祀、求嗣、开光</em>
+  <i>64</i>
+</div>
+
+<div class="calendar-row">
+  <span>06-27</span>
+  <b>命定时刻</b>
+  <em>祭祀、安机械、求嗣</em>
+  <i>65</i>
+</div></div>
+    </div>
+    <div class="panel full">
+      <div class="label">重点日期卡</div>
+      <div class="cards-grid">
+<div class="day-card destined">
+  <div class="day-header">
+    <span class="day-num">27</span>
+    <span class="day-week">周六</span>
+    <span class="destined-badge">机会</span>
+  </div>
+  <div class="ganzhi">壬申</div>
+  <div class="short-sign">推进窗口｜祭祀、安机械、求嗣</div>
+  <div class="yi-items">适合：祭祀、安机械、求嗣</div>
+  <div class="nakshatra">2026-06-27</div>
+  <div class="score-bar">
+    <div class="score-fill" style="width:65%"></div>
+  </div>
+</div>
+
+<div class="day-card destined">
+  <div class="day-header">
+    <span class="day-num">26</span>
+    <span class="day-week">周五</span>
+    <span class="destined-badge">机会</span>
+  </div>
+  <div class="ganzhi">辛未</div>
+  <div class="short-sign">推进窗口｜祭祀、求嗣、开光</div>
+  <div class="yi-items">适合：祭祀、求嗣、开光</div>
+  <div class="nakshatra">2026-06-26</div>
+  <div class="score-bar">
+    <div class="score-fill" style="width:64%"></div>
+  </div>
+</div>
+
+<div class="day-card destined">
+  <div class="day-header">
+    <span class="day-num">10</span>
+    <span class="day-week">周三</span>
+    <span class="destined-badge">机会</span>
+  </div>
+  <div class="ganzhi">乙卯</div>
+  <div class="short-sign">顺势整理｜祭祀、作灶、馀事勿取</div>
+  <div class="yi-items">适合：祭祀、作灶、馀事勿取</div>
+  <div class="nakshatra">2026-06-10</div>
+  <div class="score-bar">
+    <div class="score-fill" style="width:60%"></div>
+  </div>
+</div>
+<div class="day-card avoid">
+  <div class="day-header">
+    <span class="day-num">12</span>
+    <span class="day-week">周五</span>
+    <span class="destined-badge">避坑</span>
+  </div>
+  <div class="ganzhi">丁巳</div>
+  <div class="short-sign">避坑窗口｜移徙、掘井、入宅</div>
+  <div class="yi-items">避开：移徙、掘井、入宅</div>
+  <div class="nakshatra">2026-06-12</div>
+  <div class="score-bar">
+    <div class="score-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="day-card avoid">
+  <div class="day-header">
+    <span class="day-num">3</span>
+    <span class="day-week">周三</span>
+    <span class="destined-badge">避坑</span>
+  </div>
+  <div class="ganzhi">戊申</div>
+  <div class="short-sign">避坑窗口｜入宅、安床、作灶</div>
+  <div class="yi-items">避开：入宅、安床、作灶</div>
+  <div class="nakshatra">2026-06-03</div>
+  <div class="score-bar">
+    <div class="score-fill" style="width:6%"></div>
+  </div>
+</div></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>_t_val</span>
+    <span>生成于 2026-06-29</span>
+  </footer>
+</main>
+</body>
+</html>

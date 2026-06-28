@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Virtual environments and local dependencies
+.venv/
+venv/
+env/
+.skill_deps/
+
+# User data and generated files
+profiles/*.json
+profiles/*.context.json
+profiles/_active
+profiles/*.ics
+profiles/*.html
+outputs/*
+!outputs/.gitkeep
+materials/*
+!materials/.gitkeep
+
+# Local run artifacts
+/daily_out.json
+/tmp_install/
+
+# Local reference workspace, not project source
+c/
+
+# Local assistant/editor state
+.agents/
+.claude/
+agents/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

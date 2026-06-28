@@ -1,0 +1,21 @@
+{
+  "description": "闰月用例：2012年有闰四月，公历2012-06-01落在闰四月十二",
+  "input": {
+    "solar": "2012-06-01T10:00:00",
+    "gender": "女",
+    "tz": 8
+  },
+  "expected": {
+    "bazi": {
+      "year_pillar": "壬辰",
+      "day_pillar": "癸巳"
+    },
+    "lunar": {
+      "year": 2012,
+      "month_raw": -4,
+      "note": "lunar_python 用负数表示闰月，getMonth()=-4 即闰四月",
+      "day": 12
+    }
+  },
+  "notes": "2012年壬辰年有闰四月；lunar_python.getMonth() 返回 -4 表示闰四月，无 isLeap() 方法"
+}

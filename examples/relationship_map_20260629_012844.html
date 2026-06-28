@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关系说明书</title>
+<style>
+  :root {
+    --bg:#f7f7f5;
+    --paper:#ffffff;
+    --ink:#111111;
+    --muted:#676767;
+    --faint:#9d9d9d;
+    --line:#dddddd;
+    --soft:#f1f1ef;
+    --accent:#7a6848;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    padding:36px 24px;
+  }
+  .page {
+    max-width:1180px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+  }
+  .top {
+    display:grid;
+    grid-template-columns:1fr 300px 1fr;
+    border-bottom:1px solid var(--line);
+  }
+  .hero { padding:40px 42px 34px; }
+  .eyebrow {
+    font-size:12px;
+    letter-spacing:.12em;
+    color:var(--faint);
+    text-transform:uppercase;
+    margin-bottom:24px;
+  }
+  h1 {
+    font-size:52px;
+    line-height:1;
+    font-weight:500;
+    letter-spacing:0;
+    margin-bottom:20px;
+  }
+  .pair { font-size:18px; line-height:1.55; color:var(--muted); margin-bottom:10px; }
+  .range { font-size:13px; color:var(--faint); font-variant-numeric:tabular-nums; }
+  .score-box {
+    border-left:1px solid var(--line);
+    border-right:1px solid var(--line);
+    padding:38px 30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:10px;
+  }
+  .score-num { font-size:72px; line-height:1; font-weight:500; color:var(--accent); }
+  .score-label { font-size:13px; color:var(--faint); letter-spacing:.1em; }
+  .summary { padding:40px 38px 34px; display:flex; flex-direction:column; justify-content:space-between; gap:22px; }
+  .keyword { font-size:34px; line-height:1.15; font-weight:500; }
+  .texture { font-size:15px; line-height:1.85; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid var(--line); }
+  .panel {
+    padding:28px 30px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    min-height:188px;
+  }
+  .panel:nth-child(3n) { border-right:0; }
+  .panel.wide { grid-column:span 2; }
+  .panel.full { grid-column:1 / -1; border-right:0; }
+  .label {
+    font-size:12px;
+    letter-spacing:.10em;
+    color:var(--faint);
+    margin-bottom:16px;
+  }
+  .lead { font-size:17px; line-height:1.7; font-weight:400; }
+  .muted { font-size:14px; line-height:1.82; color:var(--muted); }
+  .roles { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); }
+  .role { padding:16px 18px; font-size:15px; line-height:1.55; }
+  .role + .role { border-left:1px solid var(--line); }
+  .metrics { display:grid; gap:12px; }
+  .metric-row { display:grid; grid-template-columns:88px 1fr 34px; gap:12px; align-items:center; font-size:13px; }
+  .metric-name { color:var(--muted); }
+  .metric-bar { height:5px; background:var(--soft); position:relative; overflow:hidden; }
+  .metric-bar i { display:block; height:100%; background:var(--ink); }
+  .metric-score { color:var(--faint); text-align:right; font-variant-numeric:tabular-nums; }
+  .compare-head, .compare-row {
+    display:grid;
+    grid-template-columns:120px 1fr 1fr;
+    gap:18px;
+    align-items:start;
+  }
+  .compare-head {
+    color:var(--faint);
+    font-size:12px;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--line);
+  }
+  .compare-row {
+    padding:12px 0;
+    border-bottom:1px solid var(--soft);
+    font-size:14px;
+    line-height:1.55;
+  }
+  .compare-row:last-child { border-bottom:0; }
+  .compare-row span { color:var(--faint); }
+  .compare-row b { font-weight:400; color:var(--muted); }
+  .system-compare { border-top:1px solid var(--line); }
+  .system-compare-row {
+    display:grid;
+    grid-template-columns:72px 1fr 1fr 1.2fr;
+    gap:18px;
+    padding:14px 0;
+    border-bottom:1px solid var(--soft);
+    font-size:13.5px;
+    line-height:1.65;
+  }
+  .system-compare-row:last-child { border-bottom:0; }
+  .system-compare-row span { color:var(--ink); }
+  .system-compare-row b { font-weight:400; color:var(--muted); }
+  .system-compare-row em { font-style:normal; color:var(--faint); }
+  .playbook {
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    border-top:1px solid var(--line);
+  }
+  .play-item { padding:20px 22px; border-right:1px solid var(--line); }
+  .play-item:last-child { border-right:0; }
+  .play-item h3 { font-size:14px; font-weight:500; margin-bottom:10px; }
+  .play-item p { font-size:13.5px; line-height:1.75; color:var(--muted); }
+  .weather { display:grid; grid-template-columns:repeat(3, 1fr); border-top:1px solid var(--line); }
+  .weather-block { padding:24px 24px 26px; border-right:1px solid var(--line); min-height:178px; }
+  .weather-block:last-child { border-right:0; }
+  .weather-title { font-size:14px; color:var(--ink); margin-bottom:14px; }
+  .mini-day {
+    display:grid;
+    grid-template-columns:48px 1fr 34px;
+    gap:12px;
+    align-items:baseline;
+    padding:8px 0;
+    border-top:1px solid var(--soft);
+    font-size:14px;
+  }
+  .mini-day:first-of-type { border-top:0; }
+  .mini-date, .mini-score { color:var(--faint); font-variant-numeric:tabular-nums; }
+  .mini-label { color:var(--muted); }
+  .mini-empty { font-size:14px; color:var(--faint); padding:8px 0; }
+  .footer {
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    padding:20px 30px;
+    font-size:12px;
+    color:var(--faint);
+  }
+  @media (max-width:900px) {
+    body { padding:18px 14px; }
+    .top, .grid, .playbook, .weather { grid-template-columns:1fr; }
+    .score-box, .summary, .panel, .play-item, .weather-block { border-right:0; border-left:0; }
+    .score-box, .summary, .play-item, .weather-block { border-top:1px solid var(--line); }
+    .hero, .summary, .score-box, .panel { padding:28px 24px; }
+    h1 { font-size:40px; }
+    .panel.wide { grid-column:auto; }
+    .compare-head, .compare-row { grid-template-columns:88px 1fr 1fr; gap:12px; }
+    .system-compare-row { grid-template-columns:1fr; gap:8px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="top">
+    <div class="hero">
+      <div class="eyebrow">Relationship Brief</div>
+      <h1>关系说明书</h1>
+      <div class="pair">测试用户 × _t_val</div>
+      <div class="range">2026-06-29 - 2026-07-28</div>
+    </div>
+    <div class="score-box">
+      <div class="score-label">RELATION SCORE</div>
+      <div class="score-num">74</div>
+      <div class="muted">综合共振、沟通、亲密、冲突消化与长期经营。</div>
+    </div>
+    <div class="summary">
+      <div>
+        <div class="label">关系底色</div>
+        <div class="keyword">同频互补</div>
+      </div>
+      <p class="texture">这段关系最强的地方，是两个人很容易在某些底层需求上对上号；但也因为太像，固执起来谁都不愿意先退。</p>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <div class="label">两个人的分工</div>
+      <div class="roles">
+        <div class="role">测试用户：推动者</div>
+        <div class="role">_t_val：推动者</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="label">五维关系指数</div>
+      <div class="metrics">
+<div class="metric-row">
+  <span class="metric-name">共振感</span>
+  <span class="metric-bar"><i style="width:82%"></i></span>
+  <span class="metric-score">82</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">沟通顺滑度</span>
+  <span class="metric-bar"><i style="width:74%"></i></span>
+  <span class="metric-score">74</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">亲密稳定度</span>
+  <span class="metric-bar"><i style="width:70%"></i></span>
+  <span class="metric-score">70</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">冲突消化力</span>
+  <span class="metric-bar"><i style="width:65%"></i></span>
+  <span class="metric-score">65</span>
+</div>
+
+<div class="metric-row">
+  <span class="metric-name">长期经营度</span>
+  <span class="metric-bar"><i style="width:80%"></i></span>
+  <span class="metric-score">80</span>
+</div></div>
+    </div>
+    <div class="panel">
+      <div class="label">相处主线</div>
+      <p class="lead">共同目标要说清楚。不要只确认情绪，要把时间表、边界和下一步讲出来。</p>
+    </div>
+    <div class="panel">
+      <div class="label">容易加分的地方</div>
+      <p class="muted">测试用户和_t_val容易很快听懂对方在意什么，适合一起定计划、做长期安排。真正的加分点不是谁迁就谁，而是把同一个方向拆成可执行的小步骤。</p>
+    </div>
+    <div class="panel">
+      <div class="label">最该避开的误区</div>
+      <p class="muted">最怕两个人都觉得“我已经懂你了”，于是跳过沟通。默契一旦被当成默认同意，就很容易从亲近变成较劲。</p>
+    </div>
+    <div class="panel">
+      <div class="label">合盘依据</div>
+      <p class="muted">这不是只看一套盘。八字先看两个人的能量需求和冲突触发点，紫微补角色感和人生重心，印占看情绪本能与大运节奏，西占看表达方式和亲密需求。四组信息收束以后，这段关系更像“同频互补”。</p>
+    </div>
+    <div class="panel full">
+      <div class="label">四系统合盘证据</div>
+      <div class="system-compare">
+<div class="system-compare-row">
+  <span>八字</span>
+  <b>壬日主 / 未标明 / 用水、金 忌土、木、火</b>
+  <b>壬日主 / 伤官格 / 用水、金 忌土、木、火</b>
+  <em>看两个人的能量需求、互补方式和冲突触发点。</em>
+</div>
+
+<div class="system-compare-row">
+  <span>紫微</span>
+  <b>命宫命宫 / 身宫财帛宫 / 主星未标明</b>
+  <b>命宫命宫 / 身宫财帛宫 / 主星未标明</b>
+  <em>看关系里的角色感、人生重心和安全感来源。</em>
+</div>
+
+<div class="system-compare-row">
+  <span>印占</span>
+  <b>月宿Punarvasu Pada 2 / 大运Jupiter</b>
+  <b>月宿Punarvasu Pada 2 / 大运Jupiter</b>
+  <em>看情绪本能、关系节奏和阶段性大运背景。</em>
+</div>
+
+<div class="system-compare-row">
+  <span>西占</span>
+  <b>太阳双鱼 / 月亮巨蟹 / 上升金牛</b>
+  <b>太阳双鱼 / 月亮巨蟹 / 上升金牛</b>
+  <em>看表达方式、亲密需求和外在互动风格。</em>
+</div></div>
+    </div>
+    <div class="panel wide">
+      <div class="label">双方命盘差异</div>
+      <div class="compare">
+<div class="compare-head">
+  <span></span><strong>测试用户</strong><strong>_t_val</strong>
+</div>
+
+<div class="compare-row">
+  <span>日主</span>
+  <b>壬</b>
+  <b>壬</b>
+</div>
+<div class="compare-row">
+  <span>格局</span>
+  <b>未标明</b>
+  <b>伤官格</b>
+</div>
+<div class="compare-row">
+  <span>能量强弱</span>
+  <b>偏弱</b>
+  <b>偏弱</b>
+</div>
+<div class="compare-row">
+  <span>需要补的能量</span>
+  <b>水、金</b>
+  <b>水、金</b>
+</div>
+<div class="compare-row">
+  <span>容易过量的能量</span>
+  <b>土、木、火</b>
+  <b>土、木、火</b>
+</div></div>
+    </div>
+    <div class="panel">
+      <div class="label">一句话策略</div>
+      <p class="lead">同频互补：共同目标要说清楚。不要只确认情绪，要把时间表、边界和下一步讲出来。</p>
+    </div>
+    <div class="panel full">
+      <div class="label">相处协议</div>
+      <div class="playbook">
+        <div class="play-item"><h3>适合一起做</h3><p>适合共同制定目标、复盘进展、一起做需要耐心的长期计划。</p></div>
+        <div class="play-item"><h3>关系里的暗坑</h3><p>容易把默契当成默认同意，真实需求反而没有被说出口。</p></div>
+        <div class="play-item"><h3>日常升温动作</h3><p>每周留一次低压力对齐：最近累在哪里、想被怎样支持、下周最重要的一件事。</p></div>
+        <div class="play-item"><h3>吵架后怎么修</h3><p>争执时先停在事实层，不急着判断谁更成熟、谁更懂关系。</p></div>
+      </div>
+    </div>
+    <div class="panel full">
+      <div class="label">未来30天相处天气</div>
+      <div class="weather">
+        <div class="weather-block">
+          <div class="weather-title">适合靠近</div>
+          
+<div class="mini-day">
+  <span class="mini-date">7/28</span>
+  <span class="mini-label">适合靠近</span>
+  <span class="mini-score">87</span>
+</div>
+
+<div class="mini-day">
+  <span class="mini-date">7/16</span>
+  <span class="mini-label">适合靠近</span>
+  <span class="mini-score">82</span>
+</div>
+        </div>
+        <div class="weather-block">
+          <div class="weather-title">适合沟通</div>
+          <div class="mini-empty">这类窗口不明显</div>
+        </div>
+        <div class="weather-block">
+          <div class="weather-title">先别摊牌</div>
+          
+<div class="mini-day">
+  <span class="mini-date">7/23</span>
+  <span class="mini-label">先别摊牌</span>
+  <span class="mini-score">6</span>
+</div>
+
+<div class="mini-day">
+  <span class="mini-date">7/14</span>
+  <span class="mini-label">先别摊牌</span>
+  <span class="mini-score">9</span>
+</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>显示所选两人</span>
+    <span>生成于 2026-06-29</span>
+  </footer>
+</main>
+</body>
+</html>

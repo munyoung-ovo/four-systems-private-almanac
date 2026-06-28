@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390">
+<title>{{USER_NAME}} · {{DATE}} 通勝</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    /* 日系侘寂 · 素白体系 —— 燕麦白底 / 炭墨字 / 单一泥灰点睛 */
+    --paper:      #e8e1d4;   /* 外底，略深，衬托卡片 */
+    --card:       #f4efe6;   /* 通勝主体，燕麦白 */
+    --ink:        #33302b;   /* 正文炭墨 */
+    --ink-soft:   #6b655c;   /* 次级灰墨 */
+    --ink-faint:  #a89f90;   /* 极淡，留白呼吸 */
+    --accent:     #8a7d6b;   /* 泥灰褐，中性点睛（页眉/编号） */
+    --accent-ji:  #9a9389;   /* 收敛暖灰 */
+    --line:       #e0d9cc;   /* 发丝线 */
+    /* 语义色编码（吸收 ref_soft_skills §三.1「一眼读懂吉凶」）——
+       在侘寂暖纸上压低饱和度，克制点睛，不喧宾夺主 */
+    --jade:       #5b7d57;   /* 吉/宜：翠玉绿（去火，偏苔绿，配暖纸） */
+    --jade-soft:  #7d9472;   /* 吉·柔 */
+    --vermillion: #b24a32;   /* 命定时刻：朱砂，仅最隆重一档 */
+    --warn:       #a8633a;   /* 忌/凶：赭，警示而不刺眼 */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    font-family: 'Songti SC', 'STSong', 'Noto Serif SC', serif;
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    padding: 32px 0 48px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 等宽数字：干支 / 日期 / 分数 —— 精密仪器感 */
+  .num {
+    font-family: 'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .5px;
+  }
+
+  .page {
+    width: 390px;
+    background: var(--card);
+    position: relative;
+    /* 极淡纸张肌理：两层超低透明度径向渐变 */
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(138,125,107,.04), transparent 45%),
+      radial-gradient(circle at 82% 88%, rgba(138,125,107,.035), transparent 50%);
+    box-shadow: 0 12px 48px rgba(60,52,40,.10);
+    padding: 0 0 4px;
+  }
+
+  /* ── 页眉留白区 ── */
+  .kicker {
+    padding: 30px 34px 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+  }
+
+  .rule {
+    height: 0;
+    border-top: .5px solid var(--line);
+    margin: 14px 34px 0;
+  }
+
+  .header {
+    padding: 24px 34px 26px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .header-info { flex: 1; }
+
+  .header-date {
+    font-size: 23px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .header-user {
+    font-size: 15px;
+    color: var(--ink-soft);
+    letter-spacing: 5px;
+    margin-bottom: 8px;
+  }
+
+  .header-gz {
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 2px;
+  }
+
+  /* 吉度印章：淡墨方框 + 微倾，盖章感即仪式感 */
+  .tier-stamp {
+    text-align: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .tier-seal {
+    width: 58px;
+    height: 58px;
+    border: 1.5px solid var(--accent);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin: 0 auto 8px;
+    transform: rotate(-3deg);
+    box-shadow: inset 0 0 0 3px rgba(138,125,107,.08);
+  }
+  /* tier 语义色：印章颜色随吉凶变化，一眼可读 */
+  .tier-seal.t-destined { color: var(--vermillion); border-color: var(--vermillion);
+                          box-shadow: inset 0 0 0 3px rgba(178,74,50,.10); }
+  .tier-seal.t-daji     { color: var(--jade); border-color: var(--jade);
+                          box-shadow: inset 0 0 0 3px rgba(91,125,87,.10); }
+  .tier-seal.t-ji       { color: var(--jade-soft); border-color: var(--jade-soft);
+                          box-shadow: inset 0 0 0 3px rgba(125,148,114,.09); }
+  .tier-seal.t-ping     { color: var(--accent); border-color: var(--accent); }
+  .tier-seal.t-bad,
+  .tier-seal.t-xiong    { color: var(--warn); border-color: var(--warn);
+                          box-shadow: inset 0 0 0 3px rgba(168,99,58,.10); }
+
+  .tier-score {
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 1px;
+  }
+
+  /* 分数游标条：弱—强渐变 + 三角游标，把分数做成"可量化报告"观感 */
+  .score-meter {
+    width: 58px;
+    height: 4px;
+    margin: 9px auto 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--warn) 0%, var(--accent) 50%, var(--jade) 100%);
+    opacity: .55;
+    position: relative;
+  }
+  .score-cursor {
+    position: absolute;
+    top: -4px;
+    width: 0; height: 0;
+    border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent;
+    border-top: 5px solid var(--ink);
+    transform: translateX(-3.5px);
+  }
+  .tier-conf {
+    margin-top: 7px;
+    font-size: 9px;
+    color: var(--ink-faint);
+    letter-spacing: .5px;
+  }
+
+  /* ── 神煞副标题行 ── */
+  .meta-bar {
+    text-align: center;
+    padding: 4px 34px 2px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 3px;
+  }
+  .meta-bar .dot {
+    color: var(--ink-faint);
+    margin: 0 10px;
+  }
+
+  /* ── 短签：视觉焦点，大留白 ── */
+  .short-sign {
+    text-align: center;
+    padding: 40px 40px 42px;
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: 3px;
+    line-height: 1.7;
+    position: relative;
+  }
+  .short-sign::before,
+  .short-sign::after {
+    color: var(--ink-faint);
+    font-size: 16px;
+    font-weight: 300;
+    opacity: .7;
+  }
+  .short-sign::before { content: "「"; margin-right: 2px; }
+  .short-sign::after  { content: "」"; margin-left: 2px; }
+
+  /* ── 宜 / 忌 ── */
+  .yiji-section {
+    padding: 0 34px;
+    display: flex;
+  }
+
+  .yiji-col {
+    flex: 1;
+    padding: 26px 8px 28px;
+  }
+  .yiji-col + .yiji-col {
+    border-left: .5px solid var(--line);
+    padding-left: 22px;
+  }
+  .yiji-col:first-child { padding-right: 22px; }
+
+  .yiji-label {
+    font-size: 11px;
+    letter-spacing: 6px;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .yiji-label.yi { color: var(--jade); }
+  .yiji-label.ji { color: var(--warn); }
+
+  .yiji-items {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 2.1;
+    letter-spacing: 1px;
+  }
+
+  /* ── 今日解读 ── */
+  .interp-section {
+    padding: 28px 34px 30px;
+    border-top: .5px solid var(--line);
+  }
+
+  .interp-label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9px;
+    color: var(--ink-faint);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .interp-text {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 2.05;
+    letter-spacing: .5px;
+    white-space: pre-wrap;
+  }
+
+  /* ── 页脚 ── */
+  .footer {
+    padding: 22px 34px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: .5px solid var(--line);
+  }
+
+  .footer-left {
+    font-size: 9.5px;
+    color: var(--ink-faint);
+    line-height: 1.9;
+    letter-spacing: .5px;
+  }
+
+  .footer-seal {
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 1px;
+    opacity: .55;
+    transform: rotate(-3deg);
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="kicker">PERSONAL ALMANAC · 私人通勝</div>
+  <div class="rule"></div>
+
+  <div class="header">
+    <div class="header-info">
+      <div class="header-date num">{{DATE}}</div>
+      <div class="header-user">{{USER_NAME}}</div>
+      <div class="header-gz"><span class="num">{{YEAR_GZ}}</span>年 · <span class="num">{{MONTH_GZ}}</span>月 · <span class="num">{{DAY_GZ}}</span>日</div>
+    </div>
+    <div class="tier-stamp">
+      <div class="tier-seal {{TIER_CLASS}}">{{TIER}}</div>
+      <div class="tier-score"><span class="num">{{SCORE}}</span> 分</div>
+      <div class="score-meter"><span class="score-cursor" style="left:{{SCORE}}%"></span></div>
+      <div class="tier-conf">信度 <span class="num">{{CONFIDENCE}}</span></div>
+    </div>
+  </div>
+
+  <div class="meta-bar">
+    {{ZHI_XING}}日<span class="dot">·</span>{{NAKSHATRA}}
+  </div>
+
+  <div class="short-sign">{{SHORT_SIGN}}</div>
+
+  <div class="yiji-section">
+    <div class="yiji-col">
+      <div class="yiji-label yi">宜</div>
+      <div class="yiji-items">{{YI_ITEMS}}</div>
+    </div>
+    <div class="yiji-col">
+      <div class="yiji-label ji">忌</div>
+      <div class="yiji-items">{{JI_ITEMS}}</div>
+    </div>
+  </div>
+
+  <div class="interp-section">
+    <div class="interp-label">Reading · 今日解读</div>
+    <div class="interp-text">{{INTERP}}</div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">
+      ※ 文化娱乐参考，非决策依据<br>
+      生成于 <span class="num">{{GENERATED_AT}}</span>
+    </div>
+    <div class="footer-seal">私人通勝</div>
+  </div>
+
+</div>
+</body>
+</html>

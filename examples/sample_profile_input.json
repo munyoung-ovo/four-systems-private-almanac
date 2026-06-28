@@ -1,0 +1,12 @@
+{
+  "name": "林小满",
+  "gender": "女",
+  "solar_birth": "1998-04-12T09:30:00",
+  "birth_place_name": "广东广州天河区",
+  "lat": 23.1246,
+  "lon": 113.3612,
+  "tz": 8,
+  "time_precision": "exact",
+  "label": "我",
+  "use_true_solar": true
+}

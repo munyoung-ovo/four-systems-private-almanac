@@ -1,0 +1,26 @@
+{
+  "description": "基础用例：1995-03-12 08:30 上海 女",
+  "input": {
+    "solar": "1995-03-12T08:30:00",
+    "gender": "女",
+    "lat": 31.23,
+    "lon": 121.47,
+    "tz": 8
+  },
+  "expected": {
+    "bazi": {
+      "year_pillar": "乙亥",
+      "month_pillar": "己卯",
+      "day_pillar": "壬寅",
+      "time_pillar": "甲辰"
+    },
+    "vedic": {
+      "moon_nakshatra": "Punarvasu",
+      "moon_longitude_sidereal_approx": 85.8
+    },
+    "western": {
+      "sun_sign": "双鱼"
+    }
+  },
+  "notes": "verify_libs.py 跑通的基准值，Nakshatra 已用 Lahiri 核对"
+}

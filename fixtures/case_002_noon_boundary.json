@@ -1,0 +1,20 @@
+{
+  "description": "午时边界用例：1990-06-15 11:00 vs 11:01（时柱换点在11:00）",
+  "input_before": {
+    "solar": "1990-06-15T10:59:00",
+    "gender": "男",
+    "tz": 8
+  },
+  "input_after": {
+    "solar": "1990-06-15T11:01:00",
+    "gender": "男",
+    "tz": 8
+  },
+  "expected": {
+    "before_time_pillar": "癸巳",
+    "after_time_pillar": "甲午",
+    "day_pillar": "辛亥",
+    "note": "时柱在 11:00 整切换，10:59 属癸巳（巳时），11:01 属甲午（午时）；日柱同为辛亥"
+  },
+  "notes": "边界验证：确保 lunar_python 的时辰划分与标准地支时辰一致"
+}
