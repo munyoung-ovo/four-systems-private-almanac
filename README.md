@@ -8,7 +8,7 @@
 
 ## 这是什么
 
-运行在 Codex 上的私人通勝工具。
+运行在 Codex / Claude Code 上的私人通勝工具。
 
 你给它出生时间、地点和想问的事，它会在本地生成档案、排盘、择日、合盘、日历和图文报告。
 
@@ -100,7 +100,7 @@ python install.py
 点击右上角绿色代码按钮→下载ZIP，解压后将文件夹整体复制到你的项目根目录下。
  
 
-把这个项目安装到 Codex 的 skills 目录：
+把这个项目安装到 Codex / Claude Code 的 skills 目录：
 
 ```bash
 python install_skill.py
@@ -112,13 +112,19 @@ python install_skill.py
 python install_skill.py --codex-only
 ```
 
+只安装到 Claude Code：
+
+```bash
+python install_skill.py --claude-only
+```
+
 安装后开新对话即可生效。
 
 ---
 
 ## 使用
 
-在 Codex 里输入：
+在 Codex / Claude Code 里输入：
 
 ```text
 载入黄道吉日

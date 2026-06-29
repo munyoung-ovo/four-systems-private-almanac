@@ -30,6 +30,8 @@ materials/*
 # Local run artifacts
 /daily_out.json
 /tmp_install/
+/test_copy_smoke/
+/tmp_install_zip_test/
 
 # Local reference workspace, not project source
 c/

@@ -20,7 +20,7 @@ def install_one(package) -> bool:
     if r2.returncode == 0:
         print(f"  ✅ {package}（--break-system-packages）")
         return True
-    LOCAL_DEPS.mkdir(exist_ok=True)
+    LOCAL_DEPS.mkdir(parents=True, exist_ok=True)
     r3 = _pip_install(package, local=True)
     if r3.returncode == 0:
         print(f"  ✅ {package}（本地依赖目录）")
