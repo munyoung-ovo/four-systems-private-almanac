@@ -125,13 +125,13 @@ python install_skill.py --claude-only
 
 ## 使用
 
-在 Codex / Claude Code 里输入：
+在 Codex / Claude Code 里可以输入：
 
 ```text
 载入黄道吉日
 ```
 
-或直接说：
+也可以不说固定口令，直接说：
 
 ```text
 今天适合签约吗
@@ -139,6 +139,8 @@ python install_skill.py --claude-only
 帮我找下个月适合面试的日子
 给我做深度命盘解读
 我和这个人合盘看看
+1997年11月14日14:30，女，甘肃张掖
+我放了一个星盘PDF，帮我核盘
 ```
 
 首次使用时，如果没有档案，它会引导你输入：

@@ -1,15 +1,32 @@
 ---
 name: huangdao-jiri
-description: Personalized Chinese almanac and astrology assistant for building birth profiles, checking auspicious dates, generating daily tongshu reports, calendar exports, deep chart readings, and relationship chart comparisons. Use when the user asks for 黄道吉日, 私人通勝, 今日运势, 择日, 命盘解读, 合盘, 八字, 紫微, Vedic astrology, or related personalized almanac workflows.
+description: Personalized Chinese almanac and astrology assistant for building birth profiles, checking auspicious dates, generating daily tongshu reports, calendar exports, deep chart readings, and relationship chart comparisons. Use when the user explicitly says 载入黄道吉日, or naturally asks for 今日运势, 择日, 适不适合做某事, 建命盘, 出生信息排盘, 命盘解读, 事业/感情/财运/贵人/健康分析, 合盘, 八字, 紫微, 西占, Vedic astrology, 星盘 PDF/截图核对, or related personalized almanac workflows.
 ---
 
 # 黄道吉日 · 私人通勝
 
 所有排盘由确定性脚本完成，LLM 负责解读与自动复审；AI 不替代本地计算，但必须帮助发现输入、边界和材料交叉验证风险。
 
+## 触发方式
+
+不要要求用户必须说“载入黄道吉日”。以下任意自然语言都应启动本 skill：
+
+- “帮我看今天适不适合签约”
+- “下个月哪天适合面试/搬家/表白”
+- “1997 年 11 月 14 日 14:30，女，甘肃张掖”
+- “给这个人建个命盘”
+- “帮我看事业/感情/财运/贵人/健康”
+- “我和这个人合不合”
+- “我放了一个星盘 PDF/紫微截图，帮我核一下”
+- “八字/紫微/西占/印占怎么看”
+
+如果用户直接给出生信息，不要先显示主菜单；进入建档识别与确认流程。如果用户直接问具体事项，先检查是否已有可用档案；有档案则进入对应模块，没有档案则自然引导先建档。
+
+意图不清时只问一句，例如：“你想看今天状态，还是想让我帮你挑一个具体日子？”
+
 ## 快速启动
 
-载入 skill 时优先走轻量路径，不要读取全部参考文件。
+显式载入或自然语言触发 skill 时，优先走轻量路径，不要读取全部参考文件。
 
 1. 优先把当前 skill 目录和 `.skill_deps/` 加入 Python 路径。
 2. 先尝试导入三个依赖：`lunar_python`、`iztro_py`、`swisseph`。
@@ -38,7 +55,15 @@ for module in ("lunar_python", "iztro_py", "swisseph"):
 1. 检查 `profiles/` 下有没有 `.json` 档案。
 2. 检查 `materials/` 下有没有 PDF/JPG/PNG 文件。
 
-有档案时直接显示主菜单。没有档案时，引导用户输入出生信息或把星盘文件放入 `materials/`。
+有档案且用户没有直接提出具体事项时，显示主菜单。没有档案时，引导用户输入出生信息或把星盘文件放入 `materials/`。
+
+如果用户已经在第一句话里给出具体意图，不要强行停在主菜单：
+
+- 给了出生信息：进入 `reference/build_profile.md` 的建档确认。
+- 问今天/某天/择日：进入 `reference/module_1_today.md`。
+- 问事业/感情/财运/贵人/健康：进入 `reference/module_3_chart.md`。
+- 问合盘：进入 `reference/module_4_heban.md`。
+- 说管理/切换/新增档案：进入 `reference/module_5_profiles.md`。
 
 首次进入或用户说“调整排序”时，显示排序入口：
 
