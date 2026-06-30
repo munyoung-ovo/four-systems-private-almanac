@@ -26,7 +26,7 @@
 
 ---
 
-## 个人化触发逻辑（供 personalize.py 参考）
+## 个人化触发逻辑（personalize.py 使用）
 
 ### 升级条件（strength +1 ～ +2）
 - 词条五行属性 ∈ 用神五行列表 → strength +1

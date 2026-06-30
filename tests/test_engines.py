@@ -112,6 +112,32 @@ class TestZiwei:
         r = ziwei_build(CASE_001["solar_dt"], CASE_001["gender"])
         assert r["five_elements_class"] != ""
 
+    def test_ziwei_basis_has_enriched_palaces(self):
+        r = ziwei_build(CASE_001["solar_dt"], CASE_001["gender"], target_date="2026-06-25")
+        basis = r["ziwei_basis"]
+        assert basis["available"] is True
+        assert basis["validation"]["palace_count"] == 12
+        assert len(basis["palaces"]) == 12
+        first = basis["palaces"][0]
+        assert "strength" in first
+        assert "opposite_index" in first
+        assert "triad_indices" in first and len(first["triad_indices"]) == 3
+        assert "career" in basis["topic_index"]
+        assert basis["topic_index"]["career"]
+
+    def test_ziwei_basis_empty_palace_borrows_opposite(self):
+        r = ziwei_build(CASE_001["solar_dt"], CASE_001["gender"], target_date="2026-06-25")
+        empty = next(p for p in r["ziwei_basis"]["palaces"] if not p["major_stars"])
+        opposite = r["ziwei_basis"]["palaces"][empty["opposite_index"]]
+        assert empty["borrowed_major_stars"] == opposite["major_stars"]
+
+    def test_horoscope_layers_have_summary_indexes(self):
+        r = ziwei_build(CASE_001["solar_dt"], CASE_001["gender"], target_date="2026-06-25")
+        summary = r["horoscope_layers"]["summary"]["yearly"]
+        assert summary["transform_by_type"]["禄"]["star"] == "天同"
+        assert "福德" in summary["transform_by_palace"]
+        assert summary["active_palaces"]
+
     def test_time_index_conversion(self):
         from engines.ziwei import _hour_to_time_index
         assert _hour_to_time_index(8, 30)  == 4
@@ -132,10 +158,21 @@ class TestVedic:
     def test_vimshottari_present(self):
         r = vedic_build(CASE_001["solar_dt"], CASE_001["gender"])
         assert "mahadasha" in r["vimshottari"]
+        assert "birth_mahadasha" in r["vimshottari"]
+        assert "current_mahadasha" in r["vimshottari"]
         assert len(r["vimshottari"]["timeline"]) == 9
-        assert r["vimshottari"]["timeline"][0]["planet"] == r["vimshottari"]["mahadasha"]
+        assert r["vimshottari"]["timeline"][0]["planet"] == r["vimshottari"]["birth_mahadasha"]
         assert r["vimshottari"]["timeline"][0]["start_date"]
         assert len(r["vimshottari"]["timeline"][0]["antardasha"]) == 9
+
+    def test_vimshottari_current_uses_target_date(self):
+        birth = vedic_build(CASE_001["solar_dt"], CASE_001["gender"],
+                            target_date="1995-03-12")
+        current = vedic_build(CASE_001["solar_dt"], CASE_001["gender"],
+                              target_date="2026-06-30")
+        assert birth["vimshottari"]["mahadasha"] == birth["vimshottari"]["birth_mahadasha"]
+        assert current["vimshottari"]["target_date"] == "2026-06-30"
+        assert current["vimshottari"]["current_antardasha"]
 
     def test_degraded_no_ascendant(self):
         r = vedic_build("1995-03-12T00:00:00", "女", "unknown")
@@ -149,10 +186,52 @@ class TestVedic:
         assert av["bav_totals"] == {"Sun": 48, "Moon": 49, "Mars": 39, "Mercury": 54,
                                     "Jupiter": 56, "Venus": 52, "Saturn": 39}
         assert sum(av["sav"].values()) == 337
+        assert av["validation"]["sav_total_is_337"] is True
+        assert len(av["bav"]) == 7
+        assert len(av["bav"]["Sun"]) == 12
+        assert len(av["sav_by_house"]) == 12
 
     def test_ashtakavarga_none_when_degraded(self):
         r = vedic_build("1995-03-12T00:00:00", "女", "unknown")
         assert r["ashtakavarga"] is None
+
+    def test_jyotish_basis_has_d1_foundation(self):
+        r = vedic_build(CASE_001["solar_dt"], CASE_001["gender"], "exact")
+        basis = r["jyotish_basis"]
+        assert basis is not None
+        assert basis["lagna"]["house"] == 1
+        assert len(basis["planets"]) == 9
+        assert basis["planets"]["Rahu"]["retrograde"] is True
+        assert basis["planets"]["Ketu"]["retrograde"] is True
+        assert basis["validation"]["rahu_ketu_opposition"] is True
+        assert basis["validation"]["planet_count"] == 9
+        assert set(basis["house_lords"]) == set(range(1, 13))
+
+    def test_jyotish_basis_has_divisional_and_interpretive_fields(self):
+        r = vedic_build(CASE_001["solar_dt"], CASE_001["gender"], "exact")
+        basis = r["jyotish_basis"]
+        for key in ("D9", "D10", "D4", "D5"):
+            assert key in basis["divisional_charts"]
+            assert "Lagna" in basis["divisional_charts"][key]
+        assert basis["karakas"]["darakaraka"]
+        assert "Moon" in basis["dignity"]
+        assert "waxing" in basis["moon_phase"]
+
+    def test_vimshottari_precision_metadata_and_ad_jd(self):
+        r = vedic_build(CASE_001["solar_dt"], CASE_001["gender"],
+                        target_date="2026-06-30")
+        vim = r["vimshottari"]
+        assert vim["precision"]["has_all_antardasha"] is True
+        assert vim["precision"]["uses_birth_moon_longitude"] is True
+        first_ad = vim["timeline"][0]["antardasha"][0]
+        assert first_ad["start_jd"] < first_ad["end_jd"]
+
+    def test_strength_metrics_are_explicitly_degraded(self):
+        r = vedic_build(CASE_001["solar_dt"], CASE_001["gender"], "exact")
+        metrics = r["jyotish_basis"]["strength_metrics"]
+        assert metrics["available"] is False
+        assert metrics["level"] == "not_configured"
+        assert "combustion" in r["jyotish_basis"]
 
 class TestWestern:
     def test_sun_sign(self):
@@ -184,6 +263,20 @@ class TestWestern:
         vedic_build(CASE_001["solar_dt"], CASE_001["gender"])
         r = western_build(CASE_001["solar_dt"], CASE_001["gender"])
         assert r["sun"] == "双鱼"
+
+    def test_western_basis_has_traditional_layers(self):
+        r = western_build(CASE_001["solar_dt"], CASE_001["gender"])
+        basis = r["western_basis"]
+        assert basis["zodiac"] == "tropical"
+        assert basis["house_system"] == "Placidus"
+        assert basis["moon_phase"]["phase"]
+        assert basis["void_moon"]["available"] is True
+        assert "dignity" in basis["planets"]["太阳"]
+        assert basis["planets"]["太阳"]["house"] is not None
+
+    def test_aspects_include_applying_or_separating(self):
+        r = western_build(CASE_001["solar_dt"], CASE_001["gender"])
+        assert any(a.get("phase") in ("applying", "separating") for a in r["natal_aspects"])
 
 class TestPersonalize:
     def test_different_users_different_output(self):
@@ -273,6 +366,27 @@ class TestResonance:
         p = self._get_profile()
         r = analyze_date(p, "签约", "2026-07-01")
         assert r["votes"]["western"]["stance"] == "avoid"
+
+    def test_votes_include_reliability_fields(self):
+        from engines.resonance import analyze_date
+        p = self._get_profile()
+        r = analyze_date(p, "嫁娶", "2026-07-01")
+        assert "weighted_score" in r
+        for v in r["votes"].values():
+            assert "strength" in v and 0 <= v["strength"] <= 1
+            assert "confidence" in v and 0 <= v["confidence"] <= 1
+            assert "scope" in v
+
+    def test_feedback_calibration_changes_confidence(self):
+        from engines.resonance import analyze_date
+        p = self._get_profile()
+        p["calibration"] = {
+            "system_adjustments": [
+                {"system": "western", "topic": "嫁娶", "confidence_adjustment": -0.3}
+            ]
+        }
+        r = analyze_date(p, "嫁娶", "2026-07-01")
+        assert r["votes"]["western"]["confidence"] < 0.78
 
 class TestFusion:
     def _get_profile(self):
@@ -488,6 +602,17 @@ class TestSpecialPattern:
         assert r["special_pattern"] is not None
         assert r["confidence"] <= 0.45
         assert "人工复核" in r["degrade_reason"]
+
+    def test_special_pattern_disables_yong_shen_scoring(self):
+        p = build_profile("_test_cong_yong", "1984-02-26T21:00:00", "男",
+                          time_precision="exact", use_true_solar=False)
+        r = p_build(p, daily_build("2026-06-26"))
+        assert r["special_pattern"] is not None
+        assert r["flags"]["用神得力"] is False
+        assert not any("用神" in b["label"] or "忌神" in b["label"]
+                       for b in r["score_breakdown"])
+        reasons = [x["reason"] for x in r["personal_yi"] + r["personal_ji"]]
+        assert not any("用神" in reason or "忌神" in reason for reason in reasons)
 
 class TestEdgeCaseRegressions:
 

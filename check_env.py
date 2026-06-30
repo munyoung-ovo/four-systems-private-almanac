@@ -16,6 +16,7 @@ DEPS = [
     ("lunar_python", "lunar_python", "lunar_python"),
     ("iztro-py",     "iztro_py",     "iztro-py"),
     ("pyswisseph",   "swisseph",     "pyswisseph"),
+    ("flatlib",      "flatlib",      "flatlib"),
     ("pypdf",        "pypdf",        "pypdf"),
     ("Pillow",       "PIL",          "Pillow"),
     ("pytesseract",  "pytesseract",  "pytesseract"),

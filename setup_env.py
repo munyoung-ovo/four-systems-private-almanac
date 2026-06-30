@@ -5,7 +5,7 @@ import shutil
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 VENV_DIR = os.path.join(ROOT, ".venv")
-PACKAGES = ["lunar_python", "iztro-py", "pyswisseph", "pypdf", "Pillow", "pytesseract"]
+PACKAGES = ["lunar_python", "iztro-py", "pyswisseph", "flatlib", "pypdf", "Pillow", "pytesseract"]
 MIN, MAX = (3, 8), (3, 13)
 
 def _version_ok(exe) -> bool:

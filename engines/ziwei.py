@@ -12,6 +12,20 @@ def _hour_to_time_index(hour: int, minute: int = 0) -> int:
 
 TIME_PRECISION = Literal["exact", "hour", "unknown"]
 
+MAIN_STARS = {
+    "紫微", "天机", "太阳", "武曲", "天同", "廉贞", "天府", "太阴",
+    "贪狼", "巨门", "天相", "天梁", "七杀", "破军",
+}
+AUSPICIOUS_STARS = {"左辅", "右弼", "文昌", "文曲", "天魁", "天钺", "禄存", "天马"}
+PRESSURE_STARS = {"擎羊", "陀罗", "火星", "铃星", "地空", "地劫"}
+TOPIC_PALACES = {
+    "love": ["夫妻宫", "福德宫", "迁移宫"],
+    "career": ["官禄宫", "财帛宫", "迁移宫"],
+    "wealth": ["财帛宫", "田宅宫", "官禄宫"],
+    "health": ["疾厄宫", "福德宫"],
+    "support": ["父母宫", "交友宫", "兄弟宫"],
+}
+
 def _safe_translate(obj, method: str, fallback: str = "") -> str:
     fn = getattr(obj, method, None)
     if callable(fn):
@@ -20,6 +34,98 @@ def _safe_translate(obj, method: str, fallback: str = "") -> str:
         except Exception:
             return fallback
     return fallback
+
+def _normalize_palace_name(name: str) -> str:
+    name = str(name or "")
+    return name if name.endswith("宫") else f"{name}宫"
+
+def _palace_strength(major_stars: list[str], minor_stars: list[str]) -> dict:
+    auspicious = [s for s in minor_stars if s in AUSPICIOUS_STARS]
+    pressure = [s for s in minor_stars if s in PRESSURE_STARS]
+    score = len(major_stars) * 2 + len(auspicious) - len(pressure)
+    if not major_stars:
+        quality = "empty"
+    elif score >= 4:
+        quality = "supported"
+    elif score <= 0:
+        quality = "pressured"
+    else:
+        quality = "balanced"
+    return {
+        "score": score,
+        "quality": quality,
+        "auspicious_stars": auspicious,
+        "pressure_stars": pressure,
+    }
+
+def _support_indices(index: int) -> dict:
+    return {
+        "self": index,
+        "opposite": (index + 6) % 12,
+        "triad": sorted({index, (index + 4) % 12, (index + 8) % 12}),
+        "triad_opposite": sorted({index, (index + 4) % 12, (index + 8) % 12, (index + 6) % 12}),
+    }
+
+def _build_ziwei_basis(palaces: list[dict], soul_palace: dict | None,
+                       body_palace: dict | None, degraded: bool) -> dict:
+    by_index = {p["index"]: p for p in palaces}
+    enriched = []
+    for p in palaces:
+        idx = p["index"]
+        support = _support_indices(idx)
+        opposite = by_index.get(support["opposite"], {})
+        strength = _palace_strength(p.get("major_stars", []), p.get("minor_stars", []))
+        borrowed = []
+        if not p.get("major_stars"):
+            borrowed = opposite.get("major_stars", [])
+        enriched.append({
+            **p,
+            "normalized_name": _normalize_palace_name(p.get("name", "")),
+            "opposite_index": support["opposite"],
+            "opposite_palace": opposite.get("name", ""),
+            "triad_indices": support["triad"],
+            "triad_opposite_indices": support["triad_opposite"],
+            "borrowed_major_stars": borrowed,
+            "strength": strength,
+        })
+
+    by_name = {_normalize_palace_name(p["name"]): p for p in enriched if p.get("name")}
+    topic_index = {
+        topic: [by_name[name] for name in names if name in by_name]
+        for topic, names in TOPIC_PALACES.items()
+    }
+    return {
+        "available": not degraded,
+        "precision": "minute" if not degraded else "degraded",
+        "palaces": enriched,
+        "palace_by_name": by_name,
+        "topic_index": topic_index,
+        "soul_palace": soul_palace,
+        "body_palace": body_palace,
+        "validation": {
+            "palace_count": len(palaces),
+            "has_soul_palace": bool(soul_palace),
+            "has_body_palace": bool(body_palace),
+            "all_palaces_named": all(bool(p.get("name")) for p in palaces),
+        },
+    }
+
+def _summarize_layer(layer: dict) -> dict:
+    transform_by_palace: dict[str, list[dict]] = {}
+    transform_by_type: dict[str, dict] = {}
+    for t in layer.get("transforms", []):
+        palace = t.get("flow_palace", "")
+        transform_by_palace.setdefault(palace, []).append(t)
+        transform_by_type[t.get("type", "")] = t
+    return {
+        "name": layer.get("name", ""),
+        "degraded": layer.get("degraded", False),
+        "flow_soul_palace": layer.get("flow_soul_palace"),
+        "flow_soul_stars": layer.get("flow_soul_stars", []),
+        "transform_by_palace": transform_by_palace,
+        "transform_by_type": transform_by_type,
+        "active_palaces": sorted(k for k in transform_by_palace if k),
+    }
 
 def build(solar_dt: str, gender: str,
           time_precision: TIME_PRECISION = "exact",
@@ -75,6 +181,10 @@ def build(solar_dt: str, gender: str,
         "palaces":           palaces,
         "palace_by_name":    palace_by_name,
         "horoscope_layers":  horoscope_layers(solar_dt, gender, target_date, time_precision),
+        "ziwei_basis":       _build_ziwei_basis(
+            palaces, palace_dict(soul_palace), palace_dict(body_palace),
+            time_precision == "unknown",
+        ),
         "calculation_profile": CalculationProfile(
             calendar_type=CalendarType.SOLAR,
             is_true_solar_time=False,
@@ -188,13 +298,18 @@ def horoscope_layers(solar_dt: str, gender: str, target_date: str,
         return {"degraded": True, "error": str(e),
                 "decadal": empty, "yearly": empty, "monthly": empty, "daily": empty}
 
-    return {
+    layers = {
         "degraded": degraded,
         "decadal": _horoscope_state(chart, h.decadal, degraded),
         "yearly": _horoscope_state(chart, h.yearly, degraded),
         "monthly": _horoscope_state(chart, h.monthly, degraded),
         "daily": _horoscope_state(chart, h.daily, degraded),
     }
+    layers["summary"] = {
+        key: _summarize_layer(layers[key])
+        for key in ("decadal", "yearly", "monthly", "daily")
+    }
+    return layers
 
 def year_horoscope_state(solar_dt: str, gender: str, target_date: str,
                          time_precision: TIME_PRECISION = "exact") -> dict:

@@ -8,11 +8,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 LOCAL_DEPS = ROOT / ".skill_deps"
 
-PACKAGES = ["lunar_python", "iztro-py", "pyswisseph", "pypdf", "Pillow", "pytesseract"]
+PACKAGES = ["lunar_python", "iztro-py", "pyswisseph", "flatlib", "pypdf", "Pillow", "pytesseract"]
 MODULES = {
     "lunar_python": "lunar_python",
     "iztro-py": "iztro_py",
     "pyswisseph": "swisseph",
+    "flatlib": "flatlib",
     "pypdf": "pypdf",
     "Pillow": "PIL",
     "pytesseract": "pytesseract",

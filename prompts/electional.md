@@ -16,8 +16,9 @@
 
 每条结果包含：
 - `date`：候选日期
-- `votes`：bazi/ziwei/vedic/western 各自的 `stance`（favor/neutral/avoid）、`basis`（判据，**你的法定理由来源，照转即可，禁止自创**）、`precision`（精度：日-时级 / 日级 / 天级 / 年-月级）
-- `resonance_strength`：0-4，favor 计数
+- `votes`：bazi/ziwei/vedic/western 各自的 `stance`（favor/neutral/avoid）、`basis`（判据，**你的法定理由来源，照转即可，禁止自创**）、`precision`、`scope`、`strength`、`confidence`
+- `resonance_strength`：0-4，favor 计数（兼容旧星级，不等于最终可靠度）
+- `weighted_score`：-1 到 1，已把 `strength × confidence` 纳入；排序和最终建议优先看它
 - `conflict`：冲突信息（如有），含 `type`、`note`（该怎么做）、`why_both`（**为何两者都成立**）、`avoid_systems`（给出保留的系统）
 - `is_destined_moment`：是否 4/4 全票
 
@@ -39,7 +40,7 @@ YYYY-MM-DD（[干支日]）  ★★★☆☆ (3/4)
   → 综合建议：[一句话]
 ```
 
-星级映射：4=★★★★★  3=★★★☆☆  2=★★☆☆☆  1=★☆☆☆☆  0=☆☆☆☆☆
+星级映射：4=★★★★★  3=★★★☆☆  2=★★☆☆☆  1=★☆☆☆☆  0=☆☆☆☆☆。星级只表示同向票数；若 `weighted_score` 偏低或有高置信 avoid，正文必须保守。
 
 ### 第三段：特别提示（如有）
 
@@ -50,7 +51,7 @@ YYYY-MM-DD（[干支日]）  ★★★☆☆ (3/4)
 ### 冲突仲裁原则（有 `conflict` 时启用）
 
 1. **先说"为何两者都成立"**：直接化用 `conflict.why_both`，让用户理解这不是系统出错，而是不同尺度/维度的真实信号——再接 `conflict.note` 给出该怎么做。
-2. **用 `precision` 决定"该听谁"**：信号冲突时，精度更高的系统权重更大。优先级：**vedic（日-时级）> bazi（日级）> western（天级）> ziwei（年-月级）**。例如紫微（年-月级）avoid 而八字/Nakshatra（日级）favor，则听日级、把紫微当背景色。
+2. **用 `precision/scope/confidence/strength` 决定"该听谁"**：信号冲突时，优先看时间尺度是否匹配本问题，再看置信度和强度。一般优先级：**vedic（日-时级）> bazi（日级）> western（天级）> ziwei（年-月级）**。例如紫微（年-月级）avoid 而八字/Nakshatra（日级）favor，则听日级、把紫微当背景色。
 3. **`opposite` 例外**：≥2 系统在同维度真对立时，不靠精度强分高下——按 `why_both` 坦白"此事能量对你格外强烈"，标低置信，建议保守，把决定权交还用户。
 
 ---
@@ -67,6 +68,8 @@ YYYY-MM-DD（[干支日]）  ★★★☆☆ (3/4)
 [ziwei basis]
 [western basis]
 ```
+
+西占只引用程序给出的 `votes.western.basis` 与 `profile.western.western_basis`。`basis` 出现“相位正在逼近”时，可视为该信号仍在增强；出现“相位已经分离”时，只当余波处理。若西占提示月亮空亡，出行、签约、婚嫁、开业等启动型事项要降权，不可写成强吉。
 
 ---
 

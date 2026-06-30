@@ -1,8 +1,9 @@
 
 import json, os
 from typing import Literal, Optional
+from engines.calibration import apply_vote_calibration
 from engines.daily import build as daily_build
-from engines.personalize import _compute_flags
+from engines.personalize import _compute_flags, _precision_state, _yong_shen_reliable
 
 Stance = Literal["favor", "neutral", "avoid"]
 
@@ -44,6 +45,30 @@ SYSTEM_PRECISION = {
     "vedic":   "日-时级",
     "western": "天级",
 }
+
+SYSTEM_SCOPE = {
+    "bazi": "day",
+    "ziwei": "year-month",
+    "vedic": "day-hour",
+    "western": "day-week",
+}
+
+def _vote(system: str, stance: Stance, basis: str, *,
+          strength: float = 0.5, confidence: float = 0.7,
+          scope: str | None = None, domain: list[str] | None = None,
+          note: str | None = None) -> dict:
+    out = {
+        "stance": stance,
+        "basis": basis,
+        "system": system,
+        "strength": round(max(0.0, min(1.0, strength)), 3),
+        "confidence": round(max(0.0, min(1.0, confidence)), 3),
+        "scope": scope or SYSTEM_SCOPE.get(system, ""),
+        "domain": domain or [],
+    }
+    if note:
+        out["note"] = note
+    return out
 
 _CONFLICT_FRAME = {
     "timeframe": {
@@ -89,24 +114,37 @@ def _vote_bazi(profile: dict, day: dict, act: str) -> dict:
     ganzhi = day["ganzhi"]
     day_gan = ganzhi["day"][0]
     day_zhi = ganzhi["day"][1]
-    flags   = _compute_flags(day_gan, day_zhi, profile)
+    precision, hour_known = _precision_state(profile)
+    bazi = profile.get("bazi", {})
+    use_yong_shen = _yong_shen_reliable(bazi, hour_known)
+    flags   = _compute_flags(day_gan, day_zhi, profile, use_yong_shen)
     shensha = day.get("shensha", [])
+    confidence = 0.82 if precision == "exact" else 0.62 if precision == "hour" else 0.35
+    if not use_yong_shen:
+        confidence = min(confidence, 0.55)
 
     if flags["冲日主"] or flags["冲流年太岁"]:
         stance = "avoid"
         basis  = "日支冲日主或太岁"
+        strength = 0.8
     elif any(s in ["三煞","岁煞","月煞","五黄"] for s in shensha):
         stance = "avoid"
         basis  = "三煞/岁煞到位"
+        strength = 0.65
     elif flags["贵人到"] and flags["用神得力"]:
         stance = "favor"
         basis  = "天乙贵人到位、用神得令"
+        strength = 0.85
     elif flags["用神得力"] or flags["贵人到"]:
         stance = "favor"
         basis  = "用神得力" if flags["用神得力"] else "贵人到位"
+        strength = 0.65
     else:
         stance = "neutral"
+        strength = 0.25
         basis  = "无明显吉凶神煞"
+        if not use_yong_shen:
+            basis += "；普通喜用神不稳，本票不采用用神得力"
 
     if act in ("出行", "旅行") and flags["驿马动"]:
         stance = "favor"
@@ -118,11 +156,14 @@ def _vote_bazi(profile: dict, day: dict, act: str) -> dict:
         if stance != "avoid":
             stance = "favor"
             basis  += f"；建除'{day['zhi_xing']}'利启动"
+            strength = max(strength, 0.6)
     if act in ("动土",) and day["zhi_xing"] == "建":
         stance = "avoid"
         basis  = "建日忌动土"
+        strength = 0.75
 
-    return {"stance": stance, "basis": basis, "system": "bazi"}
+    return _vote("bazi", stance, basis, strength=strength,
+                 confidence=confidence, domain=[act])
 
 _ACT_ZIWEI_PALACE = {
     "签约": ["财帛", "官禄"], "投资": ["财帛", "官禄"], "开业": ["财帛", "官禄"],
@@ -155,10 +196,10 @@ def _vote_ziwei(profile: dict, day: dict, act: str) -> dict:
     state = _ziwei_year_state(profile, day["date"])
 
     if state.get("degraded"):
-        return {"stance": "neutral",
-                "basis":  "时辰未知，紫微流年宫位不可信，仅作背景参考",
-                "system": "ziwei",
-                "note":   "紫微流年为年级背景，非日级判断"}
+        return _vote("ziwei", "neutral",
+                     "时辰未知，紫微流年宫位不可信，仅作背景信息",
+                     strength=0.1, confidence=0.25, domain=[act],
+                     note="紫微流年为年级背景，非日级判断")
 
     transforms = state.get("transforms", [])
     relevant = set(_ACT_ZIWEI_PALACE.get(act, []))
@@ -171,22 +212,19 @@ def _vote_ziwei(profile: dict, day: dict, act: str) -> dict:
 
     soul = "·".join(state.get("year_soul_stars", [])) or "无主星"
     if not relevant:
-        stance, basis = "neutral", f"流年命宫坐{soul}（年级背景）；此事无对应流年宫，紫微不表态"
+        stance, basis, strength = "neutral", f"流年命宫坐{soul}（年级背景）；此事无对应流年宫，紫微不表态", 0.15
     elif ji and not benefic:
-        stance, basis = "avoid", f"流年{_fmt(ji)}，该宫宜守不宜进"
+        stance, basis, strength = "avoid", f"流年{_fmt(ji)}，该宫宜守不宜进", 0.55
     elif benefic and not ji:
-        stance, basis = "favor", f"流年{_fmt(benefic)}，利{act}"
+        stance, basis, strength = "favor", f"流年{_fmt(benefic)}，利{act}", 0.55
     elif benefic and ji:
-        stance, basis = "neutral", f"流年{_fmt(benefic)}，但{_fmt(ji)}，吉凶交叠"
+        stance, basis, strength = "neutral", f"流年{_fmt(benefic)}，但{_fmt(ji)}，吉凶交叠", 0.35
     else:
-        stance, basis = "neutral", f"流年命宫坐{soul}（年级背景）；四化未落{'/'.join(relevant)}，紫微不表态"
+        stance, basis, strength = "neutral", f"流年命宫坐{soul}（年级背景）；四化未落{'/'.join(relevant)}，紫微不表态", 0.2
 
-    return {
-        "stance": stance,
-        "basis":  basis,
-        "system": "ziwei",
-        "note":   "紫微流年为年级背景，非日级判断",
-    }
+    return _vote("ziwei", stance, basis, strength=strength,
+                 confidence=0.58, domain=[act],
+                 note="紫微流年为年级背景，非日级判断")
 
 def _vote_vedic(profile: dict, day: dict, act: str) -> dict:
     panchanga = day.get("panchanga", {})
@@ -200,72 +238,112 @@ def _vote_vedic(profile: dict, day: dict, act: str) -> dict:
     if nakshatra in NAK_AVOID:
         stance = "avoid"
         basis  = f"{nakshatra} 为凶宿，忌一切重要启动"
+        strength = 0.75
     elif nakshatra in NAK_FAVOR or nakshatra in act_fav:
         stance = "favor"
         basis  = f"{nakshatra} 吉宿"
+        strength = 0.7
         if nakshatra in act_fav:
             basis += f"，尤适合{act}"
+            strength = 0.85
         if is_waxing:
             basis += "；月相上弦，能量上升"
     else:
         stance = "neutral"
         basis  = f"{nakshatra} 中性宿"
+        strength = 0.25
         if not is_waxing:
             basis += "；月相下弦，适合收尾而非启动"
 
     if karana in KARANA_AVOID:
         stance = "avoid" if stance != "favor" else "neutral"
         basis += f"；{karana} Karana 不利正式启动"
+        strength = max(strength, 0.65)
     elif yoga in YOGA_FAVOR and stance != "avoid":
         stance = "favor"
         basis += f"；{yoga} Yoga 加分"
+        strength = max(strength, 0.65)
     elif yoga in YOGA_AVOID and stance == "neutral":
         stance = "avoid"
         basis += f"；{yoga} Yoga 偏阻"
+        strength = max(strength, 0.55)
 
-    return {"stance": stance, "basis": basis, "system": "vedic"}
+    return _vote("vedic", stance, basis, strength=strength,
+                 confidence=0.75, domain=[act])
 
 def _vote_western(profile: dict, day: dict, act: str) -> dict:
-    transits = day.get("transits", [])
-    transit_signs = {t["planet"]: t["sign"] for t in transits}
-
     western = profile.get("western", {})
-    natal   = western.get("planets", {})
+    basis_data = western.get("western_basis") or {}
+    precision = profile.get("meta", {}).get("time_precision", "unknown")
+    confidence = 0.78 if precision == "exact" else 0.62 if precision == "hour" else 0.45
 
-    jupiter_sign = transit_signs.get("木星", "")
-    saturn_sign  = transit_signs.get("土星", "")
-
-    natal_sun_sign = natal.get("太阳", {}).get("sign", "")
-    natal_moon_sign = natal.get("月亮", {}).get("sign", "")
-
-    stance = "neutral"
-    basis  = "过境无明显相位"
+    void_moon = basis_data.get("void_moon") or {}
+    if void_moon.get("is_void") and act in ("签约", "合同", "嫁娶", "出行", "旅行", "开业"):
+        return _vote("western", "avoid",
+                     f"月亮空亡，{act}类事项易缺少后续承接",
+                     strength=0.6, confidence=min(confidence, 0.66), domain=[act])
 
     if act in ("签约", "合同") and _is_mercury_retrograde(day["date"]):
-        return {
-            "stance": "avoid",
-            "basis":  "水星逆行期间，签约/合同类事项易生反复",
-            "system": "western",
-        }
+        return _vote("western", "avoid",
+                     "水星逆行期间，签约/合同类事项易生反复",
+                     strength=0.85, confidence=confidence, domain=[act])
 
-    if jupiter_sign == natal_sun_sign:
-        stance = "favor"
-        basis  = f"木星过境本命太阳所在星座（{jupiter_sign}），大吉"
-    elif jupiter_sign == natal_moon_sign:
-        stance = "favor"
-        basis  = f"木星过境本命月亮所在星座（{jupiter_sign}），情绪/直觉峰值"
-    elif saturn_sign == natal_sun_sign:
-        stance = "avoid"
-        basis  = f"土星过境本命太阳所在星座（{saturn_sign}），压力收缩期"
+    try:
+        from engines.western import transit_hits
+        hits = transit_hits(western, day["date"])
+    except Exception:
+        hits = []
 
-    if act in ("嫁娶",):
-        venus_sign = transit_signs.get("金星", "")
-        natal_venus_sign = natal.get("金星", {}).get("sign", "")
-        if venus_sign == natal_venus_sign:
-            stance = "favor"
-            basis  = f"金星过境本命金星星座，利婚姻感情"
+    act_planets = {
+        "签约": {"水星", "土星", "木星"},
+        "合同": {"水星", "土星", "木星"},
+        "开业": {"太阳", "木星", "土星", "火星"},
+        "投资": {"金星", "木星", "土星"},
+        "嫁娶": {"金星", "月亮", "木星"},
+        "出行": {"月亮", "水星", "火星"},
+        "旅行": {"月亮", "水星", "火星"},
+    }.get(act, {"太阳", "月亮", "水星", "金星", "火星", "木星", "土星"})
+    hard = {"四分", "对分"}
+    soft = {"六合", "三合"}
 
-    return {"stance": stance, "basis": basis, "system": "western"}
+    scored = []
+    for h in hits:
+        planet = h.get("transit_planet")
+        if planet not in act_planets:
+            continue
+        aspect = h.get("aspect")
+        strength = float(h.get("strength", 0))
+        if h.get("phase") == "applying":
+            strength = min(1.0, strength + 0.08)
+        elif h.get("phase") == "separating":
+            strength = max(0.0, strength - 0.08)
+        if aspect in soft:
+            scored.append((strength, "favor", h))
+        elif aspect in hard:
+            scored.append((strength, "avoid", h))
+        elif aspect == "合相":
+            if planet in {"木星", "金星"}:
+                scored.append((strength, "favor", h))
+            elif planet in {"土星", "火星"}:
+                scored.append((strength, "avoid", h))
+
+    if not scored:
+        return _vote("western", "neutral", "行运无明显相关相位",
+                     strength=0.15, confidence=confidence, domain=[act])
+
+    scored.sort(key=lambda x: -x[0])
+    strength, stance, hit = scored[0]
+    basis = (f"{hit['transit_planet']}行运{hit['aspect']}本命{hit['natal_point']}"
+             f"（容许度{hit['orb']}°）")
+    if hit.get("phase") == "applying":
+        basis += "；相位正在逼近"
+    elif hit.get("phase") == "separating":
+        basis += "；相位已经分离"
+    if hit.get("transit_retrograde"):
+        confidence = min(confidence, 0.68)
+        basis += "；行星逆行，结果易反复"
+    return _vote("western", stance, basis, strength=strength,
+                 confidence=confidence, domain=[act])
 
 def _classify_conflict(votes: list[dict]) -> dict | None:
     stances = [v["stance"] for v in votes]
@@ -299,10 +377,10 @@ def _classify_conflict(votes: list[dict]) -> dict | None:
 def analyze_date(profile: dict, act: str, date_str: str) -> dict:
     day   = daily_build(date_str)
     votes_raw = [
-        _vote_bazi(profile, day, act),
-        _vote_ziwei(profile, day, act),
-        _vote_vedic(profile, day, act),
-        _vote_western(profile, day, act),
+        apply_vote_calibration(_vote_bazi(profile, day, act), profile, act),
+        apply_vote_calibration(_vote_ziwei(profile, day, act), profile, act),
+        apply_vote_calibration(_vote_vedic(profile, day, act), profile, act),
+        apply_vote_calibration(_vote_western(profile, day, act), profile, act),
     ]
 
     votes = {
@@ -315,15 +393,28 @@ def analyze_date(profile: dict, act: str, date_str: str) -> dict:
     aligned_favor     = sum(1 for v in votes_raw if v["stance"] == "favor")
     conflict          = _classify_conflict(votes_raw)
     is_destined       = aligned_favor == 4
+    weighted_raw = 0.0
+    weight_total = 0.0
+    stance_score = {"favor": 1.0, "neutral": 0.0, "avoid": -1.0}
+    for v in votes_raw:
+        weight = float(v.get("strength", 0.5)) * float(v.get("confidence", 0.7))
+        weighted_raw += stance_score[v["stance"]] * weight
+        weight_total += weight
+    weighted_score = round(weighted_raw / weight_total, 3) if weight_total else 0.0
 
     return {
         "date":              date_str,
         "act":               act,
         "votes":             {k: {"stance": v["stance"], "basis": v["basis"],
-                                   "precision": SYSTEM_PRECISION.get(k, "")}
+                                   "precision": SYSTEM_PRECISION.get(k, ""),
+                                   "scope": v.get("scope", SYSTEM_SCOPE.get(k, "")),
+                                   "strength": v.get("strength", 0.5),
+                                   "confidence": v.get("confidence", 0.7),
+                                   "domain": v.get("domain", [])}
                               for k, v in votes.items()},
         "aligned_favor":     aligned_favor,
         "resonance_strength": aligned_favor,
+        "weighted_score":    weighted_score,
         "conflict":          conflict,
         "is_destined_moment": is_destined,
     }

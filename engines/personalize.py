@@ -161,6 +161,17 @@ def _precision_state(profile: dict) -> tuple[str, bool]:
         hour_known = False
     return precision, hour_known
 
+def _yong_shen_reliable(bazi: dict, hour_known: bool) -> bool:
+    if not hour_known:
+        return False
+    if bazi.get("special_pattern"):
+        return False
+    try:
+        strength_confidence = float(bazi.get("strength_confidence", 1.0))
+    except (TypeError, ValueError):
+        strength_confidence = 0.0
+    return strength_confidence >= 0.65
+
 class _ScoreSheet:
     def __init__(self):
         self.breakdown: list[dict] = []
@@ -174,7 +185,8 @@ class _ScoreSheet:
     def total(self) -> float:
         return sum(b["delta"] for b in self.breakdown)
 
-def _compute_flags(day_gan: str, day_zhi: str, profile: dict) -> dict:
+def _compute_flags(day_gan: str, day_zhi: str, profile: dict,
+                   use_yong_shen: bool = True) -> dict:
     bazi    = profile["bazi"]
     dm_gan  = bazi["day_master"]
     pillars = bazi["pillars"]
@@ -205,14 +217,16 @@ def _compute_flags(day_gan: str, day_zhi: str, profile: dict) -> dict:
         if TAOHUA_MAP.get(nz) == day_zhi:
             flags["桃花到"] = True
 
-    yong = set(bazi.get("yong_shen", []))
-    if day_wx in yong or dayzhi_wx in yong:
-        flags["用神得力"] = True
+    if use_yong_shen:
+        yong = set(bazi.get("yong_shen", []))
+        if day_wx in yong or dayzhi_wx in yong:
+            flags["用神得力"] = True
 
     return flags
 
 def _score_dimensions(sheet: _ScoreSheet, day_gan: str, day_zhi: str,
-                      profile: dict, flags: dict, hour_known: bool) -> None:
+                      profile: dict, flags: dict, hour_known: bool,
+                      use_yong_shen: bool = True) -> None:
     bazi    = profile["bazi"]
     dm_gan  = bazi["day_master"]
     dm_wx   = _wuxing(dm_gan)
@@ -247,8 +261,8 @@ def _score_dimensions(sheet: _ScoreSheet, day_gan: str, day_zhi: str,
     if rel_parts:
         sheet.add("地支关系", rel_total, "日支" + "、".join(rel_parts))
 
-    yong = set(bazi.get("yong_shen", []))
-    ji   = set(bazi.get("ji_shen", []))
+    yong = set(bazi.get("yong_shen", [])) if use_yong_shen else set()
+    ji   = set(bazi.get("ji_shen", [])) if use_yong_shen else set()
     sc_conf   = bazi.get("strength_confidence", 1.0)
     sc_factor = round(min(1.0, 0.55 + 0.5 * sc_conf), 2)
     w_factor  = (1.0 if hour_known else 0.6) * sc_factor
@@ -320,14 +334,14 @@ def _confidence(score: int, precision: str, hour_known: bool,
     near_boundary = margin <= 3
     if near_boundary:
         base -= 0.08
-    if strength_conf < 0.6:
+    if strength_conf < 0.65:
         base -= 0.06
     conf = round(max(0.3, min(0.99, base)), 2)
 
     reason = None
     if not hour_known:
-        reason = "生时未知，时柱缺失：已剥离/降权时辰敏感维度（用神×0.6），结论置信度下调，仅供参考"
-    elif strength_conf < 0.6:
+        reason = "生时未知，时柱缺失：已剥离时辰敏感维度与普通喜用神加减分，结论置信度下调，仅供参考"
+    elif strength_conf < 0.65:
         reason = f"日主旺衰接近中和（旺衰置信{strength_conf:.2f}），用神方向不稳，吉凶判断仅供参考"
     elif near_boundary:
         reason = f"综合分 {score} 贴近分档边界，吉凶倾向不稳，建议结合当日实际"
@@ -335,10 +349,11 @@ def _confidence(score: int, precision: str, hour_known: bool,
 
 def _reweight_yiji(base_yi: list, base_ji: list,
                    flags: dict, profile: dict,
-                   score: int, degraded: bool) -> tuple[list, list]:
+                   score: int, degraded: bool,
+                   use_yong_shen: bool = True) -> tuple[list, list]:
     bazi  = profile["bazi"]
-    yong  = set(bazi.get("yong_shen", []))
-    ji_sh = set(bazi.get("ji_shen", []))
+    yong  = set(bazi.get("yong_shen", [])) if use_yong_shen else set()
+    ji_sh = set(bazi.get("ji_shen", [])) if use_yong_shen else set()
     tiaohou = set(bazi.get("tiaohou_yong_shen", []))
     cap   = 4 if degraded else 5
 
@@ -460,11 +475,13 @@ def build(profile: dict, day: dict) -> dict:
 
     precision, hour_known = _precision_state(profile)
     degraded = not hour_known
+    use_yong_shen = _yong_shen_reliable(bazi, hour_known)
 
-    flags = _compute_flags(day_gan, day_zhi, profile)
+    flags = _compute_flags(day_gan, day_zhi, profile, use_yong_shen)
 
     sheet = _ScoreSheet()
-    _score_dimensions(sheet, day_gan, day_zhi, profile, flags, hour_known)
+    _score_dimensions(sheet, day_gan, day_zhi, profile, flags,
+                      hour_known, use_yong_shen)
     _score_shensha(sheet, day.get("shensha", []), flags)
 
     score = int(round(max(0, min(100, sheet.total()))))
@@ -482,7 +499,7 @@ def build(profile: dict, day: dict) -> dict:
     p_yi, p_ji = _reweight_yiji(
         day.get("base_yi", []),
         day.get("base_ji", []),
-        flags, profile, score, degraded,
+        flags, profile, score, degraded, use_yong_shen,
     )
 
     tier = _tier(score, flags, confidence, degraded)

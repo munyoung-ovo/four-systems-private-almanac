@@ -18,6 +18,10 @@ Compatibility note: this legacy prompt is kept for reference. For normal short c
 - `bazi.strength_breakdown`：旺衰四维打分明细（人类可读），**解释"为什么旺/弱"时照转**，禁自创推演链。
 - `bazi.yong_shen` / `ji_shen`：旺衰用神 / 忌神；`bazi.tiaohou_yong_shen`：**季节调候用神**（寒暖燥湿），健康/事业建议可据此给"补什么五行"。
 - `vedic.vimshottari.mahadasha` / `mahadasha_remaining_years` / `next_mahadasha`：大运，直接读，勿算。
+- `vedic.jyotish_basis`：印占完整底座（D1 行星、Lagna、宫主、基础分盘、尊贵度、强度指标、相位、月相、校验）。非 null 时，印占专题必须优先引用这里；为 null 时，不得展开宫位/分盘/尊贵度，只能把月宿与大运作为轻量信号。若 `strength_metrics.available=false`，不得写“某星强/弱”的精算结论。
+- `western.western_basis`：西占完整底座（行星宫位、尊贵度、相位逼近/分离、日夜盘、月相、空亡月、校验）。非 null 时，西占专题必须优先引用这里；若 `houses_available=false`，不得写强宫位、上升、天顶或事业轴结论。
+- `ziwei.ziwei_basis`：紫微完整底座（十二宫、空宫借对宫、三方四正、主题宫索引、宫位强弱标签）。非 null 时，紫微专题必须优先引用这里；为 null 或 `available=false` 时，只能把命宫/身宫作为轻量信号。
+- `ziwei.horoscope_layers.summary`：大限/流年/流月/流日的四化索引，含 `transform_by_palace` 和 `transform_by_type`。阶段判断优先用这里，不要自行推流限。
 - `vedic.ashtakavarga.sav`：⭐ **八分图**——12 星座各自的综合点数(0-56)。**点数高=该领域结构扎实/流运有力，点数低=该领域偏弱需经营**。可为事业/财运/健康维度提供"哪块强哪块弱"的量化依据(如某座 SAV≥32 偏强、≤25 偏弱)。`ashtakavarga=null` 时(时辰未知)不引用。
 
 ---
@@ -213,7 +217,7 @@ Compatibility note: this legacy prompt is kept for reference. For normal short c
 
 ## 专题详细版长度与写法
 
-专题详细版参考长报告模式执行：
+专题详细版按长报告模式执行：
 
 - **字数下限**：单个专题详细版正文不少于 1200 中文字；感情、事业、财运这类主专题建议 1800-3000 中文字。少于 1200 字视为未完成。
 - **板块密度**：至少 4-6 个自然板块，每个板块 3-5 段，不要只写一段概括。
