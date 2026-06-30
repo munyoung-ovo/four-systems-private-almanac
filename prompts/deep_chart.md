@@ -1,5 +1,7 @@
 # 深度命盘解读 Prompt
 
+Compatibility note: this legacy prompt is kept for reference. For normal short chart answers, use `prompts/deep_chart_brief.md`. For `[详细版/1]` and long reports, use `prompts/deep_chart_long.md`.
+
 ---
 
 ## 输入数据

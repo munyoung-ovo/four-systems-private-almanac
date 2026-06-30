@@ -114,6 +114,14 @@ def build_profile(
         path = os.path.join(PROFILES_DIR, f"{name}.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(profile, f, ensure_ascii=False, indent=2)
+        try:
+            from engines.audit import save_audit
+
+            save_audit(profile)
+        except Exception:
+            profile.setdefault("meta", {})["audit_save_failed"] = True
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(profile, f, ensure_ascii=False, indent=2)
 
     return profile
 

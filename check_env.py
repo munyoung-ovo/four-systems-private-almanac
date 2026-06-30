@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 
 LOCAL_DEPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".skill_deps")
 if os.path.isdir(LOCAL_DEPS) and LOCAL_DEPS not in sys.path:
@@ -15,6 +16,9 @@ DEPS = [
     ("lunar_python", "lunar_python", "lunar_python"),
     ("iztro-py",     "iztro_py",     "iztro-py"),
     ("pyswisseph",   "swisseph",     "pyswisseph"),
+    ("pypdf",        "pypdf",        "pypdf"),
+    ("Pillow",       "PIL",          "Pillow"),
+    ("pytesseract",  "pytesseract",  "pytesseract"),
 ]
 
 GOLD = {
@@ -68,12 +72,23 @@ def _golden_check():
     return True, "✅ 金标准自校验通过（四柱 乙亥/己卯/壬寅/甲辰 · 月宿 Punarvasu · Lahiri）"
 
 def main():
+    auto_install = "--install" in sys.argv or "--auto-install" in sys.argv
     print(f"Python: {sys.version.split()[0]}  @ {PYBIN}\n")
     all_ok = True
+    missing = []
     for label, module, package in DEPS:
         ok, msg = _check_dep(label, module, package)
         all_ok = all_ok and ok
+        if not ok:
+            missing.append(package)
         print(msg)
+
+    if missing and auto_install:
+        print("\nAuto-installing missing dependencies...")
+        rc = subprocess.run([PYBIN, "install.py"]).returncode
+        if rc != 0:
+            sys.exit(rc)
+        os.execv(PYBIN, [PYBIN, __file__])
 
     print()
     if all_ok:

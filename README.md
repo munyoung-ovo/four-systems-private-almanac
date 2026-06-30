@@ -93,6 +93,16 @@ python install.py
 - `iztro-py`
 - `pyswisseph`
 - `pypdf`
+- `Pillow`
+- `pytesseract`
+
+如果是在 Codex / Claude Code 里使用，AI 可以先自动检测环境；缺依赖时直接运行：
+
+```bash
+python check_env.py --install
+```
+
+这个命令会自动补装缺失依赖并重新检查。普通用户不需要自己理解 pip。
 
 ---
 
