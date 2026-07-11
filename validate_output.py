@@ -19,6 +19,8 @@ def detect_kind(obj: dict) -> str:
         return "unknown"
     if "votes" in obj and "resonance_strength" in obj:
         return "resonance"
+    if "overall" in obj and "evidence" in obj and "weight_policy" in obj:
+        return "fusion"
     if "personal_yi" in obj or "tier" in obj:
         return "personalize"
     if "bazi" in obj and "meta" in obj:
@@ -79,6 +81,48 @@ def validate_resonance(r: dict) -> dict:
         warnings.append("部分 vote 缺 `precision`，冲突仲裁时无法判断该听谁。")
     return _wrap(errors, warnings)
 
+def validate_fusion(r: dict) -> dict:
+    errors, warnings = [], []
+    required = ("date", "act", "topic", "overall", "score", "weight_policy",
+                "system_order", "evidence", "confidence", "one_liner")
+    for k in required:
+        if k not in r:
+            errors.append(f"缺顶层字段 `{k}`。")
+
+    score = r.get("score")
+    if score is not None and (not _num(score) or not (-1 <= score <= 1)):
+        errors.append(f"`score` 必须在 -1 到 1 之间，实得 {score!r}。")
+    confidence = r.get("confidence")
+    if confidence is not None and (not _num(confidence) or not (0 <= confidence <= 1)):
+        errors.append(f"`confidence` 必须在 0-1 之间，实得 {confidence!r}。")
+
+    evidence = r.get("evidence") or []
+    if len(evidence) != 4:
+        errors.append(f"`evidence` 必须包含四个系统，实得 {len(evidence)}。")
+    systems = {item.get("system") for item in evidence if isinstance(item, dict)}
+    expected = {"bazi", "ziwei", "vedic", "western"}
+    if systems != expected:
+        errors.append(f"`evidence` 系统集合不完整，实得 {sorted(s for s in systems if s)}。")
+    for i, item in enumerate(evidence):
+        if not isinstance(item, dict):
+            errors.append(f"`evidence[{i}]` 必须是对象。")
+            continue
+        if item.get("signal") not in STANCES:
+            errors.append(f"`evidence[{i}].signal` 无效：{item.get('signal')!r}。")
+        if not _num(item.get("weight")) or item.get("weight", 0) <= 0:
+            errors.append(f"`evidence[{i}].weight` 必须为正数。")
+        for field in ("strength", "confidence"):
+            if not _num(item.get(field)) or not (0 <= item.get(field, -1) <= 1):
+                errors.append(f"`evidence[{i}].{field}` 必须在 0-1 之间。")
+        if not _num(item.get("effective_weight")) or item.get("effective_weight", -1) < 0:
+            errors.append(f"`evidence[{i}].effective_weight` 必须是非负数。")
+
+    if r.get("weight_policy") not in {"act_default", "user_order_x_act", "user_weights"}:
+        errors.append(f"未知 `weight_policy`：{r.get('weight_policy')!r}。")
+    if r.get("conflict") and not r["conflict"].get("type"):
+        warnings.append("存在 `conflict` 但缺冲突类型。")
+    return _wrap(errors, warnings)
+
 def validate_profile(p: dict) -> dict:
     errors, warnings = [], []
     if "meta" not in p:
@@ -109,6 +153,7 @@ def _wrap(errors, warnings):
 _VALIDATORS = {
     "personalize": validate_personalize,
     "resonance": validate_resonance,
+    "fusion": validate_fusion,
     "profile": validate_profile,
 }
 

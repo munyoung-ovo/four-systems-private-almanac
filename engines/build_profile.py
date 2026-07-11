@@ -2,6 +2,8 @@
 import json
 import os
 import re
+from copy import deepcopy
+from datetime import date
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -101,6 +103,7 @@ def build_profile(
             "use_true_solar": use_true_solar,
             "label":          label,
             "created_at":     datetime.now(timezone.utc).isoformat(),
+            "calculated_for": date.today().isoformat(),
         },
         "bazi":    bazi,
         "ziwei":   ziwei,
@@ -124,6 +127,42 @@ def build_profile(
                 json.dump(profile, f, ensure_ascii=False, indent=2)
 
     return profile
+
+def refresh_profile_for_date(profile: dict, target_date: str) -> dict:
+    """Refresh date-sensitive layers without mutating or saving the natal profile."""
+    target = date.fromisoformat(target_date)
+    meta = profile.get("meta") or {}
+    place = meta.get("birth_place") or {}
+    solar_birth = meta.get("solar_birth")
+    gender = meta.get("gender")
+    if not solar_birth or not gender:
+        raise ValueError("档案缺少出生时间或性别，无法刷新时间层。")
+
+    lat = float(place.get("lat", 31.23))
+    lon = float(place.get("lon", 121.47))
+    tz = float(place.get("tz", 8))
+    precision = meta.get("time_precision", "exact")
+    use_true_solar = bool(meta.get("use_true_solar", True))
+
+    from engines.bazi import build as bazi_build
+    from engines.ziwei import build as ziwei_build
+    from engines.vedic import build as vedic_build
+
+    refreshed = deepcopy(profile)
+    refreshed["bazi"] = bazi_build(
+        solar_birth, gender, precision, lon=lon, tz=tz,
+        use_true_solar=use_true_solar, current_year=target.year,
+    )
+    refreshed["ziwei"] = ziwei_build(
+        solar_birth, gender, precision, target_date=target_date,
+    )
+    refreshed["vedic"] = vedic_build(
+        solar_birth, gender, precision, lat=lat, lon=lon, tz=tz,
+        target_date=target_date,
+    )
+    refreshed["meta"] = dict(meta)
+    refreshed["meta"]["calculated_for"] = target_date
+    return refreshed
 
 def load_profile(name: str) -> dict:
     path = os.path.join(PROFILES_DIR, f"{name}.json")

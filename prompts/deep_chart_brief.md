@@ -1,58 +1,60 @@
-# Deep Chart Brief Prompt
+# 命盘短答提示
 
-Use for chart snapshot, 200-character topic answers, and concrete user questions. Do not load the long-form prompt unless the user requests `[详细版/1]`, “展开详细”, “完整命盘”, or a long report.
-
-## Input
+用于命盘快照、约 200 字专题和具体问题。输入事实仅来自：
 
 ```json
-{{profile_json}}
+{{chart_evidence_packet}}
 ```
 
-## Required Sources
+## 执行顺序
 
-- Read chart facts only from `profile_json`.
-- For fusion across systems, follow `reference/fusion_protocol.md`.
-- Read or regenerate `profiles/[name].audit.json` before interpretation.
-- Update recent topic with `engines.ui_state.set_chart_topic(topic, profile_name)` for love/career/wealth/helpful people/health/concrete question.
+1. 读取或生成当前档案审计；`high_risk` 时先核对关键出生资料。
+2. 使用 `engines.evidence_packet.build_chart_packet(profile, topic)` 生成输入；不要向低成本模型传完整档案。优先采用输入中的 `synthesis` 和 `topic_signals`，先在内部形成“核心结论 + 2-4 条最强证据 + 冲突/边界”，不要展示内部清单。
+3. 遵守 `reference/response_boundary.md`：用户经历只用于建议落地，不作为盘面证据。
+4. 更新最近专题：`engines.ui_state.set_chart_topic(topic, profile_name)`。
+5. 输出结论、依据、边界和一个可执行动作；不复述用户整段对话。
+6. 按 `reference/interpretation_protocol.md` 区分本命、阶段和具体日期；不能从长期倾向直接跳到具体事件。
 
-## Snapshot
+## 证据要求
 
-Output a quick, human-readable snapshot:
+- 核心判断至少有一条明确字段依据；涉及强弱、时机或吉凶时，优先采用两套以上相关系统的独立证据。
+- 选择与问题最匹配的系统，不机械凑齐四套。单一弱信号只作补充，不能压过多系统主线。
+- `bazi.special_pattern` 非空或旺衰置信不足时，不用普通喜忌下强结论。
+- 时辰未知或相关底座不可用时，省略依赖时辰的宫位、上升、天顶和精细分盘。
+- 系统冲突时说明条件差异，给可逆动作，不强行统一。
+- `synthesis.direction=insufficient` 时不补结论；`synthesis.grade=limited` 时只能写单系统倾向；`synthesis.conflict=true` 时必须写反向证据。
+
+## 输出类型
+
+### 快照
+
+仅在用户想看整体、认识自己或首次建档后使用：
 
 ```text
-[日主] / [格局一句] / [命宫主星或降级提示]
-
-[核心一句话：这个人天然的能量模式]
-
+[日主] · [格局或降级提示] · [命宫主星或省略]
+[≤30字核心模式]
 当前阶段：[一句人话]
-
-[详细版/1] [具体的事·直接问] [感情/2] [事业/3] [财运/4] [贵人/5] [健康/6]
+[最相关的 2-4 个下一步入口]
 ```
 
-If the user asked a concrete question, skip the validation-opening three lines and answer the concrete question directly.
+用户已问具体问题时跳过快照和“哪条最像”的验证环节，直接回答。
 
-## Validation Opening
+### 专题短答
 
-Only use the three validation lines when the user asks for “完整命盘/认识自己/看看准不准/第一次建档后想看整体”. Do not use it when the user already asked a concrete thing.
+事业、感情、财运、贵人、健康默认约 200-350 字：
 
-Each line must be specific and yes/no verifiable. Avoid generic statements like “你有时外向有时内向”.
+```text
+结论：[直接回答]
+依据：[把 2-4 条盘面证据融合成人话]
+表现/时间：[只有输入提供对应证据时才写]
+边界：[仅在有降级或冲突时写]
+动作：[一个现在能做的动作]
+```
 
-## Topic Brief
+健康只谈节律、压力和生活方式，不预测疾病。财务问题不作收益承诺。
 
-For love/career/wealth/helpful people/health, answer in about 200 Chinese characters:
+### 具体问题
 
-- conclusion first
-- one or two chart-based reasons
-- one practical next step
+缺少的信息确实会改变结论时，只追问最关键的一项；否则直接给当前判断、主要风险和下一步。不要预测必然成功、分手、录取或具体金额。
 
-Then add the normal chat-only route line. Do not write route lines to `outputs/*.md`.
-
-## Concrete Question
-
-If the user asks a concrete thing, first clarify only when the missing context changes the answer. Then answer:
-
-- current suitability or risk
-- why the chart/current phase says so
-- next practical move
-
-Avoid deterministic promises and medical/legal/investment certainty.
+聊天结尾仅保留当前最相关的 2-4 个入口。长文与完整报告改用 `prompts/deep_chart_long.md`。

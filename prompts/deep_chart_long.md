@@ -1,45 +1,39 @@
-# Deep Chart Long Prompt
+# 命盘长报告提示
 
-Use only for `[详细版/1]`, “展开详细”, “完整命盘”, or explicit long-form topic detail. Short topic answers should use `prompts/deep_chart_brief.md`.
-
-## Input
+仅用于 `[详细版/1]`、明确要求展开专题或完整命盘。输入事实仅来自：
 
 ```json
 {{profile_json}}
 ```
 
-## Before Writing
+## 写作前
 
-- Resolve the detail topic from `profiles/_ui_state.json`; do not rely only on chat memory.
-- Read or regenerate `profiles/[name].audit.json`.
-- `stable`: write normally. `caution`: soften related claims. `high_risk`: ask for confirmation before writing strong long-form conclusions.
-- Write the full result to `outputs/*.md`; chat gets only a 3-5 sentence summary and file path.
-- Never write chat route buttons into the Markdown file.
+1. 从 `profiles/_ui_state.json` 解析最近专题，不只依赖聊天记忆。
+2. 读取或生成档案审计：`caution` 降低相关结论强度；`high_risk` 先核对资料，不写强结论长文。
+3. 按 `reference/response_boundary.md` 先锁定盘面结论，并按 `reference/interpretation_protocol.md` 区分本命、阶段和具体事件。内部建立简短证据图：每个主结论对应字段、可观察表现、适用领域、时间范围、置信边界和系统冲突。
+4. 删除没有证据支撑、重复或只为凑篇幅的结论，再开始成文。
 
-## Length
+## 内容要求
 
-- Topic detailed version: at least 1200 Chinese characters.
-- Love/career/wealth: recommended 1800-3000 Chinese characters.
-- Full four-system portrait: recommended 1800-3000 Chinese characters.
+- 专题报告不少于 1200 中文字；事业、感情、财运和完整人像建议 1800-3000 字。
+- 使用 4-6 个自然板块，每个板块按“结论是什么 → 盘面为何这样说 → 如何行动”展开。
+- 约 70% 通俗解释、20% 盘面依据、10% 必要技术注释；术语出现时立即翻译。
+- 融合四系统为同一条人像或时间主线，不按系统分别贴四份报告，也不机械要求每段四套齐全。
+- 多系统同向的结论放前；单系统信号放后并限定；冲突说明时间、领域、层次或强度差异。
+- 用户经历只能作为盘面结论后的例子，不得成为证明或改盘依据。
+- 每个核心板块至少给一个可观察表现；时间证据不足时明确不写应期。真实冲突要写出反向证据和成立条件。
 
-## Structure
+## 专题范围
 
-Use 4-6 natural sections. Each section should cover:
+- 感情：亲密模式、适合的互动、关系风险、沟通方式、未来一年节奏、行动建议。
+- 事业：工作环境、能力变现、赛道选择、当前阶段、合作/跳槽/副业风险、行动建议。
+- 财运：收入与资源模式、守财方式、合作/投资风险、现金流建议；不承诺收益。
+- 贵人：类型、渠道、识别和维护方式、当前窗口、需要避开的关系模式。
+- 健康：身心节律、压力、作息运动饮食方向；不预测疾病和寿命。
+- 完整人像：核心气质、行动模式、优势与挑战、事业、财富、关系、成长、家庭、社交、身心节奏和当前阶段。
 
-- what this means in plain language
-- why the chart supports it
-- what the user can do
+## 交付
 
-Keep the ratio near 70% plain-language interpretation, 20% chart evidence, 10% technical notes. Translate every technical term immediately.
+将正文写入 `outputs/[主题]_[姓名或代号]_[日期].md`。文件只放用户正文，不放 JSON、内部证据表、路由按钮或生成说明。聊天返回 3-5 句摘要、文件路径和最多三个相关下一步。
 
-## Topic Minimums
-
-- Love: intimacy pattern, suitable people, relationship risk, communication style, next-year rhythm, practical advice.
-- Career: work environment, ability monetization, track choice, current phase, cooperation/job change/side project risk, practical advice.
-- Wealth: where money comes from, how to keep it, cooperation/investment risk, resource strategy, spending/cash-flow advice.
-- Helpful people: type, channels, recognition cues, relationship maintenance, current window, people to avoid.
-- Health: rhythm, stress pattern, five-element bias, sleep/movement/food direction, current care focus. Do not predict diseases.
-
-## Full Portrait
-
-For complete chart portrait, integrate BaZi, Ziwei, Western, and Vedic into one person. Do not paste four separate system reports. If systems conflict, explain whether the conflict is about timing, domain, layer, or signal strength.
+禁止宿命承诺、恐吓、具体疾病预测、具体财运数字，以及用“如上所述”或提纲代替正文。

@@ -402,6 +402,20 @@ class TestFusion:
         assert r["topic"] == "合作/文书"
         assert len(r["evidence"]) == 4
         assert all(e["signal"] in ("favor", "neutral", "avoid") for e in r["evidence"])
+        assert all(0 <= e["strength"] <= 1 for e in r["evidence"])
+        assert all(0 <= e["confidence"] <= 1 for e in r["evidence"])
+        assert all(e["effective_weight"] == round(
+            e["weight"] * e["strength"] * e["confidence"], 4
+        ) for e in r["evidence"])
+
+    def test_fusion_output_passes_contract_validation(self):
+        from engines.fusion import fuse_date
+        from validate_output import validate
+
+        r = fuse_date(self._get_profile(), "签约", "2026-07-01")
+        result = validate(r)
+        assert result["kind"] == "fusion"
+        assert result["valid"], result["errors"]
 
     def test_contract_retrograde_becomes_action_advice(self):
         from engines.fusion import fuse_date
@@ -443,6 +457,39 @@ class TestFusion:
         r = fuse_date(p, "签约", "2026-07-01")
         assert r["weight_policy"] == "user_order_x_act"
         assert r["system_order"] == ["bazi", "ziwei", "vedic", "western"]
+
+    def test_conversation_context_cannot_change_chart_conclusion(self):
+        from engines.fusion import fuse_date
+
+        p = self._get_profile()
+        p["context"] = {
+            "concerns": ["我最近特别顺利，准备立刻签约"],
+            "fusion_system_order": ["western", "ziwei", "vedic", "bazi"],
+            "fusion_system_weights": {"western": 100},
+        }
+        with_context = fuse_date(p, "签约", "2026-07-01")
+
+        clean = self._get_profile()
+        without_context = fuse_date(clean, "签约", "2026-07-01")
+
+        for key in ("overall", "score", "weight_policy", "system_order", "convergence", "conflict"):
+            assert with_context[key] == without_context[key]
+        assert with_context["evidence"] == without_context["evidence"]
+
+    def test_low_reliability_alignment_cannot_force_commit(self):
+        from engines.fusion import Evidence, _convergence, _overall, _weighted_score
+
+        evidence = [
+            Evidence(system=system, signal="favor", role="test", time_scale="day",
+                     weight=0.25, strength=0.2, confidence=0.3,
+                     scope="day", domain=("签约",), reason="low")
+            for system in ("bazi", "ziwei", "vedic", "western")
+        ]
+        convergence = _convergence(evidence)
+        score = _weighted_score(evidence)
+        assert convergence["favor"] == 4
+        assert convergence["reliable_favor"] == 0
+        assert _overall(score, convergence, None) != "commit"
 
     def test_parse_order_choice_short_code(self):
         from engines.fusion import parse_order_choice

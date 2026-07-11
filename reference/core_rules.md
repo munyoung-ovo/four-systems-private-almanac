@@ -1,28 +1,37 @@
-# Core Rules
+# 共用执行规则
 
-## Calculation
+## 事实与计算
 
-- All BaZi, Ziwei, Western, Vedic, daily, electional, calendar, and relationship facts must come from local scripts.
-- If data or dependencies are missing, degrade or ask for missing information; never fill chart facts from imagination.
-- Every saved build/rebuild must create or refresh `profiles/[name].audit.json` with `engines.audit.save_audit(profile)`.
-- Before long detailed readings, read `profiles/[name].audit.json`; regenerate it if missing.
+- 八字、紫微、西占、印占、每日、择日、日历和合盘事实只能来自本地脚本。
+- 优先复用已保存档案；仅在出生资料、历法、时区、坐标或真太阳时设置变化后重排。
+- 同一档案、事项和日期范围只计算一次。解释、排序和文件生成复用同一份结构化结果。
+- 依赖按需检查：功能调用失败后才运行 `python check_env.py`；确认缺失后才安装。
+- 每次保存或重排后运行 `engines.audit.save_audit(profile)`。长报告前读取审计结果，缺失时再生成。
 
-## Audit Status
+## 精度与失败
 
-- `stable`: proceed normally.
-- `caution`: keep related claims conservative.
-- `high_risk`: ask for birth data or material confirmation before strong conclusions or long-form detail.
+- `stable`：正常输出；`caution`：降低相关结论强度；`high_risk`：先核对关键出生资料，不写强结论长文。
+- 时辰未知时，不使用时柱、紫微时辰敏感宫位、西占上升/天顶、印占上升与精细分盘作强判断。
+- 临近换日、节气、时辰、上升或月宿边界时，说明受影响字段，不把整张盘全部判为不可用。
+- 某一系统失败时，保留其余可用系统并标明降级；关键系统全部不可用时停止解释，报告具体缺项。
+- 工具失败先尝试一次最小修复或替代路径；仍失败时用人话说明未完成部分，不输出堆栈。
 
-## Materials
+## 对话与状态
 
-- PDF/image materials are evidence only. They never override locally calculated chart facts.
-- Use `scripts/pdf_extractor.py` for PDF and image files.
-- If OCR is unavailable or weak, use AI visual inspection to extract birth fields or chart labels, then cross-check.
-- If material labels conflict with local results, ask the user to confirm birth time, place, timezone, calendar type, or whether the material belongs to the same person.
+- 以用户最新明确问题为当前任务。历史对话只提供已确认的客观约束，不覆盖出生资料和盘面结果。
+- 只有缺项会改变结论时才追问；能用安全默认值继续时直接执行并说明假设。
+- 近况与命盘分开保存。职业、担忧、经历和自我评价不进入排盘、权重或吉凶计算。
+- 最近专题用 `engines.ui_state.set_chart_topic(...)` 保存；`[详细版/1]` 从 `profiles/_ui_state.json` 解析，不仅依靠聊天记忆。
 
-## Routing And Files
+## 材料与隐私
 
-- If the user has a concrete intent, route directly; do not force the main menu.
-- Show system-order/sorting controls only when the user asks about priority, order, weighting, or custom preference.
-- Keep next-step route buttons in chat only; never write them into `outputs/*.md`.
-- Store recent chart topic state with `engines.ui_state.set_chart_topic(...)`; `[详细版/1]` resolves from `profiles/_ui_state.json`.
+- PDF、图片和截图仅用于识别出生资料及复审标签，不覆盖本地计算事实。
+- 材料冲突时先确认时间、地点、时区、历法以及是否属于同一人。
+- 私人档案、材料和输出保持本地；不得把真实资料写进示例或公开说明。
+
+## 输出
+
+- 普通回答按“结论 → 依据 → 风险/边界 → 动作”组织，省略无关背景和内部过程。
+- 长文写入 `outputs/*.md`；聊天只给 3-5 句摘要和路径。路由按钮不写进文档。
+- 默认只给 2-4 个相关下一步，不在每次回答后重复完整菜单。
+- 不作宿命承诺，不预测寿命、灾祸或具体疾病，不用命理替代医疗、法律、投资和安全判断。

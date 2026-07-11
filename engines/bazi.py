@@ -388,7 +388,9 @@ def build(solar_dt: str, gender: str,
         "time":  _shishen(day_gan, time_gan) if time_gan else None,
     }
 
-    tai_sui_branch = str(ec.getYear())[1]
+    natal_year_branch = str(ec.getYear())[1]
+    luck = _build_luck(ec, gender, day_gan, current_year)
+    tai_sui_branch = (luck.get("current_liunian") or {}).get("zhi")
 
     result = {
         "pillars": {
@@ -409,6 +411,7 @@ def build(solar_dt: str, gender: str,
         "tiaohou_yong_shen": sa["tiaohou_yong_shen"],
         "ge_ju":             sa["ge_ju"],
         "ten_gods":   ten_gods,
+        "natal_year_branch": natal_year_branch,
         "tai_sui_branch": tai_sui_branch,
         "nayin": {
             "year":  str(ec.getYearNaYin()),
@@ -416,7 +419,7 @@ def build(solar_dt: str, gender: str,
             "day":   str(ec.getDayNaYin()),
             "hour":  str(ec.getTimeNaYin()) if time_precision != "unknown" else None,
         },
-        "luck": _build_luck(ec, gender, day_gan, current_year),
+        "luck": luck,
         "time_adjustment": time_adjustment,
         "boundary_warnings": _boundary_warnings(dt) if time_precision != "unknown" else [],
         "calculation_profile": CalculationProfile(

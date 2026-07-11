@@ -21,6 +21,7 @@ tiaohou_yong_shen[]
 ge_ju
 ten_gods{year,month,time}
 tai_sui_branch
+natal_year_branch
 nayin{}
 luck{direction,start,dayun[],current_dayun,current_liunian}
 time_adjustment{enabled,input_time,effective_time,longitude_correction_minutes,equation_of_time_minutes,total_correction_minutes}
@@ -170,11 +171,11 @@ avoid_actions[]
 risks[]
 timing
 one_liner
-evidence[{system,signal,role,time_scale,weight,reason}]
+evidence[{system,signal,role,time_scale,scope,domain,strength,confidence,weight,effective_weight,reason}]
 raw{personalize,resonance}
 ```
 
-`fusion` 是最终面向用户的统一语言层。用户问“能不能做”时，优先用 `one_liner`、`best_actions`、`avoid_actions` 和 `risks`，不要直接罗列四系统投票。
+`effective_weight = weight × strength × confidence`。`fusion` 是最终面向用户的统一语言层。用户问“能不能做”时，优先用 `one_liner`、`best_actions`、`avoid_actions` 和 `risks`，不要直接罗列四系统投票。
 
 排序短码：
 

@@ -98,7 +98,15 @@ class Evidence:
     role: str
     time_scale: str
     weight: float
+    strength: float
+    confidence: float
+    scope: str
+    domain: tuple[str, ...]
     reason: str
+
+    @property
+    def effective_weight(self) -> float:
+        return round(self.weight * self.strength * self.confidence, 4)
 
     def as_dict(self) -> dict:
         return {
@@ -107,6 +115,11 @@ class Evidence:
             "role": self.role,
             "time_scale": self.time_scale,
             "weight": self.weight,
+            "strength": self.strength,
+            "confidence": self.confidence,
+            "scope": self.scope,
+            "domain": list(self.domain),
+            "effective_weight": self.effective_weight,
             "reason": self.reason,
         }
 
@@ -214,24 +227,41 @@ def _evidence_from_votes(
         if signal not in SIGNAL_SCORE:
             signal = "neutral"
         reason = vote.get("basis", "无明显信号")
+        strength = float(vote.get("strength", 0.5))
+        confidence = float(vote.get("confidence", 0.7))
         if system == "bazi":
             signal = _personalize_signal(personal)
             reason = _bazi_reason(personal)
+            confidence = min(confidence, float(personal.get("confidence", confidence)))
         evidence.append(Evidence(
             system=system,
             signal=signal,  # type: ignore[arg-type]
             role=role_info["role"],
             time_scale=role_info["time_scale"],
             weight=weights.get(system, role_info["default_weight"]),
+            strength=max(0.0, min(1.0, strength)),
+            confidence=max(0.0, min(1.0, confidence)),
+            scope=str(vote.get("scope", role_info["time_scale"])),
+            domain=tuple(str(item) for item in vote.get("domain", []) if item),
             reason=reason,
         ))
     return evidence
 
 
 def _weighted_score(evidence: list[Evidence]) -> float:
-    total_w = sum(e.weight for e in evidence) or 1.0
-    raw = sum(SIGNAL_SCORE[e.signal] * e.weight for e in evidence)
+    total_w = sum(e.effective_weight for e in evidence) or 1.0
+    raw = sum(SIGNAL_SCORE[e.signal] * e.effective_weight for e in evidence)
     return round(raw / total_w, 3)
+
+
+def _fusion_confidence(evidence: list[Evidence], conflict: dict | None) -> float:
+    denominator = sum(e.weight * e.strength for e in evidence)
+    if not denominator:
+        return 0.2
+    value = sum(e.weight * e.strength * e.confidence for e in evidence) / denominator
+    if conflict and conflict.get("type") == "genuine_tension":
+        value *= 0.8
+    return round(max(0.2, min(0.95, value)), 2)
 
 
 def _convergence(evidence: list[Evidence]) -> dict:
@@ -242,6 +272,14 @@ def _convergence(evidence: list[Evidence]) -> dict:
         "favor": counts["favor"],
         "neutral": counts["neutral"],
         "avoid": counts["avoid"],
+        "reliable_favor": sum(
+            1 for e in evidence
+            if e.signal == "favor" and e.strength >= 0.45 and e.confidence >= 0.6
+        ),
+        "reliable_avoid": sum(
+            1 for e in evidence
+            if e.signal == "avoid" and e.strength >= 0.45 and e.confidence >= 0.6
+        ),
     }
 
 
@@ -274,11 +312,13 @@ def _conflict_type(evidence: list[Evidence]) -> dict | None:
 
 
 def _overall(score: float, convergence: dict, conflict: dict | None) -> str:
-    if convergence["avoid"] >= 2 and score < 0:
+    reliable_favor = convergence.get("reliable_favor", 0)
+    reliable_avoid = convergence.get("reliable_avoid", 0)
+    if reliable_avoid >= 2 and score < 0:
         return "delay"
-    if convergence["favor"] >= 3 and not conflict:
+    if convergence["favor"] >= 3 and reliable_favor >= 2 and score >= 0.35 and not conflict:
         return "commit"
-    if convergence["favor"] >= 2 and convergence["avoid"] == 0:
+    if reliable_favor >= 2 and reliable_avoid == 0 and score > 0:
         return "proceed"
     if convergence["favor"] >= 1 and convergence["avoid"] >= 1:
         return "prepare_not_commit"
@@ -333,15 +373,10 @@ def fuse_date(profile: dict, act: str, date_str: str) -> dict:
     resonance = analyze_date(profile, act, date_str)
     act_profile = _act_profile(act)
     meta = profile.get("meta", {})
-    context = profile.get("context", {})
-    system_order = (
-        meta.get("fusion_system_order")
-        or context.get("fusion_system_order")
-    )
-    system_weights = (
-        meta.get("fusion_system_weights")
-        or context.get("fusion_system_weights")
-    )
+    # Only explicit profile settings may change system weights. Conversation
+    # context is for wording and routing, never for chart conclusions.
+    system_order = meta.get("fusion_system_order")
+    system_weights = meta.get("fusion_system_weights")
     weights, weight_policy, resolved_order = _resolve_weights(
         act, system_order=system_order, system_weights=system_weights)
     evidence = _evidence_from_votes(resonance, personal, act, weights)
@@ -359,7 +394,7 @@ def fuse_date(profile: dict, act: str, date_str: str) -> dict:
         "score": score,
         "weight_policy": weight_policy,
         "system_order": resolved_order,
-        "confidence": round(min(0.95, max(0.35, abs(score) * 0.45 + 0.45)), 2),
+        "confidence": _fusion_confidence(evidence, conflict),
         "convergence": convergence,
         "conflict": conflict,
         "state": _state(overall, act_profile["topic"]),
