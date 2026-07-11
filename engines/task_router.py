@@ -6,8 +6,8 @@ from typing import Literal
 ModelTier = Literal["deterministic", "low_cost", "standard", "reasoning"]
 
 DETERMINISTIC_INTENTS = {"build_profile", "profile_manage", "calendar_export"}
-LOW_COST_INTENTS = {"menu", "daily", "file_handoff", "profile_summary"}
-STANDARD_INTENTS = {"chart_brief", "electional", "relationship_brief"}
+LOW_COST_INTENTS = {"menu", "file_handoff", "profile_summary"}
+STANDARD_INTENTS = {"daily", "chart_brief", "electional", "relationship_brief"}
 REASONING_INTENTS = {"chart_long", "full_portrait", "relationship_long"}
 
 

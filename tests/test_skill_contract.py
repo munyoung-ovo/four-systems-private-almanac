@@ -71,3 +71,19 @@ def test_model_cost_does_not_reduce_answer_or_chart_quality():
     skill = _read("SKILL.md")
     assert "模型路由服务于推理成本" in skill
     assert "不得减少排盘字段、降低断法标准或缩短用户应得的答案" in skill
+
+
+def test_detailed_shortcut_is_preserved_for_chart_flows():
+    skill = _read("SKILL.md")
+    core = _read("reference/core_rules.md")
+    module = _read("reference/module_3_chart.md")
+    brief = _read("prompts/deep_chart_brief.md")
+    router = _read("prompts/deep_chart.md")
+    build_profile = _read("reference/build_profile.md")
+
+    assert "详细版快捷键" in skill
+    assert "[详细版/1]" in core
+    assert "回复 `1`" in module
+    assert "默认把 `[详细版/1]` 放在第一个入口" in brief
+    assert "用户回复 `1`" in router
+    assert "深度命盘解读（[详细版/1]）" in build_profile
