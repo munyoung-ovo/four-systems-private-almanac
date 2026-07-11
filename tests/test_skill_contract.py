@@ -17,6 +17,8 @@ def test_skill_has_compact_progressive_routing():
     assert "engines.task_router.route_task" in skill
     assert "engines.evidence_packet.build_chart_packet" in skill
     assert "reference/interpretation_protocol.md" in skill
+    assert "reference/system_interpretation.md" in skill
+    assert "reference/topic_interpretation.md" in skill
 
 
 def test_legacy_chart_prompt_is_router_only():
@@ -55,3 +57,17 @@ def test_interpretation_protocol_requires_falsifiable_boundaries():
     protocol = _read("reference/interpretation_protocol.md")
     for term in ("本命", "阶段", "事件/日期", "反证", "不符合时的校正顺序"):
         assert term in protocol
+
+
+def test_topic_protocol_preserves_detailed_domain_reasoning():
+    protocol = _read("reference/topic_interpretation.md")
+    for heading in ("整体命盘与核验", "感情", "事业", "财运", "贵人", "健康与状态", "具体事件"):
+        assert f"## {heading}" in protocol
+    for safeguard in ("反馈不能反向生成盘面事实", "不能仅根据一个五行", "不自动等于盈利", "不编造方位"):
+        assert safeguard in protocol
+
+
+def test_model_cost_does_not_reduce_answer_or_chart_quality():
+    skill = _read("SKILL.md")
+    assert "模型路由服务于推理成本" in skill
+    assert "不得减少排盘字段、降低断法标准或缩短用户应得的答案" in skill

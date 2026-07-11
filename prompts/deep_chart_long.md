@@ -12,6 +12,9 @@
 2. 读取或生成档案审计：`caution` 降低相关结论强度；`high_risk` 先核对资料，不写强结论长文。
 3. 按 `reference/response_boundary.md` 先锁定盘面结论，并按 `reference/interpretation_protocol.md` 区分本命、阶段和具体事件。内部建立简短证据图：每个主结论对应字段、可观察表现、适用领域、时间范围、置信边界和系统冲突。
 4. 删除没有证据支撑、重复或只为凑篇幅的结论，再开始成文。
+5. 按 `reference/answer_style.md` 保持自然叙事、白话翻译、具体场景和情绪承接；不能因为证据结构严格就写成冷冰冰的审计文档。
+6. 按 `reference/system_interpretation.md` 复核每个主要结论。专题报告至少使用两套真正覆盖该专题和时间尺度的独立证据；单系统强信号可以展开，但必须明确其适用范围。
+7. 按 `reference/topic_interpretation.md` 的专题结构检查覆盖度；允许自然合并板块，但不得用相同性格段落替代事业、关系、财富等领域的专门判断。
 
 ## 内容要求
 

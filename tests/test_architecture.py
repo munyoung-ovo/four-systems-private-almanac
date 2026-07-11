@@ -2,7 +2,7 @@ from datetime import date
 
 from engines.build_profile import build_profile, refresh_profile_for_date
 from engines.evidence_packet import build_chart_packet
-from engines.chart_signals import _synthesize
+from engines.chart_signals import _synthesize, build_topic_signals
 from engines.task_router import route_task
 
 
@@ -43,7 +43,7 @@ def test_chart_packet_is_compact_and_context_free():
     assert "synthesis" in packet
     assert packet["synthesis"]["grade"] in {"strong", "moderate", "limited", "insufficient"}
     for signal in packet["topic_signals"]:
-        for key in ("system", "direction", "strength", "confidence", "scope", "basis", "source_fields"):
+        for key in ("system", "direction", "strength", "confidence", "scope", "basis", "source_fields", "components"):
             assert key in signal
         assert signal["source_fields"]
     western_facts = packet["systems"]["western"]["facts"]
@@ -101,3 +101,25 @@ def test_single_system_direction_is_limited_not_strong():
     assert result["direction"] == "support"
     assert result["grade"] == "limited"
     assert result["system_count"] == 1
+
+
+def test_each_system_uses_layered_topic_evidence():
+    result = build_topic_signals(_profile(), "事业")
+    by_system = {signal["system"]: signal for signal in result["signals"]}
+
+    assert set(by_system) == {"bazi", "ziwei", "vedic", "western"}
+    assert {c["label"] for c in by_system["bazi"]["components"]} >= {"大运", "流年"}
+    assert any(c["label"] in {"流年", "流月"} for c in by_system["ziwei"]["components"])
+    assert {c["label"] for c in by_system["vedic"]["components"]} >= {"相关宫位", "大运", "分运"}
+    assert len(by_system["western"]["components"]) >= 2
+
+
+def test_special_bazi_pattern_cannot_emit_strong_direction():
+    profile = _profile()
+    profile["bazi"]["special_pattern"] = "待复核特殊格局"
+    profile["bazi"]["strength_confidence"] = 0.9
+    signal = next(s for s in build_topic_signals(profile, "事业")["signals"] if s["system"] == "bazi")
+
+    assert signal["direction"] == "mixed"
+    assert signal["confidence"] <= 0.45
+    assert signal["strength"] <= 0.4
