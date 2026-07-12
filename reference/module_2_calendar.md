@@ -77,6 +77,10 @@ path = save_render(html, "action_map_[name]_[YYYY-MM].html", out_dir="outputs")
 
 生成后只返回文件路径和自然入口，不展示源码。
 
+## 图文通胜短签
+
+生成单日图文通胜并调用 `render_tongshu_day` 时，先按 `prompts/daily_tongshu.md` 从该日已经计算出的主轴、宜忌和边界生成 `short_sign`，再作为参数传入。短签只作标题浓缩，不能参与分数、档位、宜忌或日期排序；没有足够依据时传空值，让渲染器保守回退。ICS 标题仍保持“宜/忌 + 事项”的简短格式，不把短签混入日历事件。
+
 ## 3. 关系说明书
 
 用户选 `3` 时，直接调用关系 HTML 渲染，不运行 ICS 预览。
